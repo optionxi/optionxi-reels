@@ -1,0 +1,27 @@
+{
+  "name": "optionxi-reel",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "remotion studio src/index.ts",
+    "build": "remotion render src/index.ts OptionXiReel out/optionxi-reel.mp4",
+    "still": "remotion still src/index.ts OptionXiReel out/frame.png --frame=300",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.539",
+    "@remotion/google-fonts": "4.0.539",
+    "framer-motion": "^14.9.0",
+    "gsap": "^3.15.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.539"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.31",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "zod": "4.6.7"
+  }
+}
