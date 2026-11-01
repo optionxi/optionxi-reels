@@ -1,6 +1,8 @@
 import React from "react";
 import {Composition} from "remotion";
-import { Reel } from "./Reel-Intro";
+import Reel from "./Reel-Intro-v2";
+// import { Reel } from "./Reel-Stock Research";
+// import { Reel } from "./Reel-Intro";
 // import { Reel } from "./Reel-Screeners";
 
 export const RemotionRoot: React.FC = () => (
