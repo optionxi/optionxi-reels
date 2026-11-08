@@ -1,13 +1,16 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Audio,
   Easing,
   Sequence,
+  staticFile,
   interpolate,
   spring,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
 import { loadFont as loadPixel } from "@remotion/google-fonts/PressStart2P";
@@ -691,10 +694,49 @@ const SceneFor: React.FC<{ beat: Beat }> = ({ beat }) => {
   );
 };
 
+
+const SFX: [string, number, number?][] = [
+  // beat whooshes
+  ...[0,105,195,345,495,615,765,885,1005,1125].map((f) => ["whoosh", f, 0.5] as [string, number, number]),
+  // hook
+  ["pop",6],["pop",14],["pop",22],["type",40,0.4],["pop",50],
+  // overview rows
+  ["tick",125],["tick",130],["tick",135],["tick",140],
+  // step 1
+  ["pop",219],["pop",225],["pop",231],["tick",239],["tick",249],["tick",259],
+  // step 2
+  ["tick",409],["tick",423],["tick",437],
+  // step 3 rows
+  ...[0,1,2,3,4,5].map((i) => ["tick", 529 + i * 8, 0.35] as [string, number, number]),
+  // step 4
+  ["pop",651],["pop",667],["pop",695],
+  // features
+  ["pop",775],["pop",780],["pop",785],["ding",827],
+  // mood
+  ["whoosh",907,0.3],["hit",935],["tick",933],["tick",947],["tick",961],
+  // algo
+  ["type",1015,0.4],["click",1075],["whoosh",1079,0.4],["tick",1093],["tick",1103],["tick",1113],
+  // download
+  ["success",1155],["pop",1171],["pop",1183],
+  // outro
+  ["hit",1245],["pop",1269],
+];
+
+const Sfx: React.FC = () => (
+  <>
+    {SFX.map(([name, from, vol = 0.7], i) => (
+      <Sequence key={i} from={from} durationInFrames={90}>
+        <Audio src={staticFile(`sfx/${name}.mp3`)} volume={vol} />
+      </Sequence>
+    ))}
+  </>
+);
+
 /* ───────────────────────── composition ───────────────────────── */
 export const Reel: React.FC = () => (
   <AbsoluteFill style={{ fontFamily: SANS, background: C.bg }}>
     <Background />
+    <Sfx />
     <Headline />
     {BEATS.map((b) => (
       <Sequence key={b.id} from={b.start} durationInFrames={b.end - b.start}>
@@ -710,3 +752,4 @@ export const Reel: React.FC = () => (
 );
 
 export default Reel;
+

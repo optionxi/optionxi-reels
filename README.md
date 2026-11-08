@@ -182,3 +182,23 @@ MIT. Feel free to fork, learn from the code, and make your own reels.
 ---
 
 Made for [OptionXi](https://optionxi.com): open-source analytics and virtual trading.
+
+
+## download SFX
+paste them into public/sfx folder
+
+- Use chatgpt to download the audios
+```
+| File          | Search for                                      |
+| ------------- | ----------------------------------------------- |
+| `whoosh.mp3`  | “whoosh”, “swoosh transition” (short, under 1s) |
+| `pop.mp3`     | “pop”, “bubble pop”, “ui pop”                   |
+| `tick.mp3`    | “tick”, “ui click soft”, “checkbox”             |
+| `type.mp3`    | “keyboard typing”, “typing short” (about 1s)    |
+| `click.mp3`   | “mouse click”                                   |
+| `ding.mp3`    | “notification”, “ding”, “message alert”         |
+| `success.mp3` | “success”, “level up”, “achievement”            |
+| `hit.mp3`     | “cinematic hit”, “impact”, “logo sting”         |
+```
+
+Then download the zip and move to the folder

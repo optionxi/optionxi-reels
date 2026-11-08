@@ -1,7 +1,7 @@
 import React from "react";
 import {Composition} from "remotion";
-import Reel from "./Avatar-Reel-How it works V2";
-// import Reel from "./Avatar-Reel-How it works";
+// import Reel from "./Avatar-Reel-How it works V2";
+import Reel from "./Avatar-Reel-How it works";
 // import YoutubeVideoIntro from "./Youtube-Intro";
 // import { Reel } from "./Reel-Intro-v3";
 // import { Reel } from "./Reel-Market Sentiment";
@@ -15,6 +15,7 @@ export const RemotionRoot: React.FC = () => (
     id="OptionXiReel"
     component={Reel}
     durationInFrames={1350}
+    // durationInFrames={900}
     fps={30}
     width={1080}
     height={1920}
