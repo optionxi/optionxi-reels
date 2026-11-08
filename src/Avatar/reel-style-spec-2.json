@@ -1,0 +1,344 @@
+{
+  "_meta": {
+    "name": "Explainer-reel style spec v2 (presenter avatar + UI-card scenes) — Blue / Yellow / Black",
+    "purpose": "Describes the look, motion language and scene flow of a vertical explainer reel so an LLM can build a Remotion project with any avatar, theme and topic. Keep the STRUCTURE and MOTION; swap BRAND, AVATAR and CONTENT.",
+    "reference": "~83s, 1080x1920 design res, 30fps, 9:16. Captions English only.",
+    "how_to_use": "Replace every value under `brand` and `content`. Do not change `layout`, `motion`, `components` or `scene_grammar` unless asked.",
+    "palette_logic": "Blue = text highlights, lines, cursor, links. Yellow = filled shapes (ticks, badges, chips, selected states) always with BLACK text/icons on top. Black/navy = dark cards and headline ink."
+  },
+  "format": {
+    "aspect": "9:16",
+    "design_resolution": [1080, 1920],
+    "reference_resolution": [720, 1280],
+    "fps": 30,
+    "target_duration_sec": "60-90s; scale scene lengths proportionally",
+    "audio": "voiceover track drives timing; each caption chunk is one scene beat"
+  },
+  "brand": {
+    "_swap_me": true,
+    "name_wordmark": "yourbrand",
+    "wordmark_style": "lowercase, geometric sans, ~46px at 1080w, ink color, small yellow dot after the last letter",
+    "handle": "@yourhandle",
+    "cta_keyword": "EDIT",
+    "colors": {
+      "bg_base": "#F5F8FE",
+      "bg_blob_top_left": "#CFE0FF",
+      "bg_blob_mid_right": "#DCE4FF",
+      "bg_glow_bottom": "#FFF1B8",
+      "ink": "#0A0C14",
+      "accent_blue": "#2457F5",
+      "accent_blue_soft": "#DCE6FF",
+      "accent_yellow": "#FFD21F",
+      "accent_yellow_soft": "#FFF4C2",
+      "on_yellow": "#0A0C14",
+      "card_bg": "#FFFFFF",
+      "card_border": "rgba(10,12,20,0.07)",
+      "dark_card_bg": "#0B0F1E",
+      "dark_card_text": "#E6EAF5",
+      "muted_text": "#7A8196",
+      "success": "#FFD21F"
+    },
+    "color_rules": [
+      "Headline keyword highlight = accent_blue (yellow text on off-white is unreadable)",
+      "Anything FILLED and small (check circles, badges, chips, selected folder, progress bar) = accent_yellow with on_yellow content",
+      "Cursor click ring = accent_blue",
+      "On dark cards: placeholders/highlights = accent_yellow tinted chip, Copy chip = accent_yellow",
+      "Never use blue and yellow as adjacent flat fills without a black or white separator"
+    ],
+    "fonts": {
+      "headline": "Space Grotesk (or similar neutral grotesk), weight 700, tracking -0.02em. For other scripts use a matching bold font with same sizing.",
+      "eyebrow": "JetBrains Mono, weight 400, lowercase, color muted_text",
+      "ui_text": "Inter 400-600",
+      "code_text": "JetBrains Mono on dark card"
+    },
+    "avatar": {
+      "_swap_me": true,
+      "source_file": "AvatarRig.tsx",
+      "description": "Flat-vector half-cartoon presenter, full body, standing, front-facing. One SVG, viewBox 0 0 400 600. Outfit colors from palette: black top, blue accent detail, yellow small accessory."
+    }
+  },
+  "layout": {
+    "_note": "Percentages of the 9:16 frame. Same skeleton on EVERY scene.",
+    "safe_margin_x_pct": 5,
+    "eyebrow": {
+      "y_pct": 8.5,
+      "x_pct": 5,
+      "style": "mono, ~26px@1080, lowercase, prefixed with '// ', pattern '// step N · topic'"
+    },
+    "headline": {
+      "y_pct": 10.5,
+      "x_pct": 5,
+      "align": "left",
+      "max_lines": 2,
+      "size_px_at_1080": 84,
+      "weight": 700,
+      "color": "ink",
+      "highlight": "1-2 keywords in accent_blue",
+      "reveal": "word-by-word, each word fades in + rises ~14px over 6 frames, staggered to voiceover. Unspoken words hidden (or 12% opacity)."
+    },
+    "hero_zone": {
+      "y_pct_from": 22,
+      "y_pct_to": 62,
+      "x_pct_from": 6,
+      "x_pct_to": 94,
+      "note": "One hero card at a time, centered, ~84-90% of width."
+    },
+    "avatar": {
+      "y_pct_from": 66,
+      "y_pct_to": 98,
+      "height_pct": 31,
+      "anchor": "bottom-center, x ≈ 50%",
+      "z_order": "above background; hero card never overlaps the head",
+      "ground_shadow": "soft ellipse under feet, 8% black"
+    },
+    "wordmark": {
+      "x_pct": 88,
+      "y_pct": 70,
+      "align": "right of avatar, chest height",
+      "present_on": "all scenes except final CTA, where it becomes large and centered"
+    }
+  },
+  "background": {
+    "type": "soft multi-blob gradient on cool off-white",
+    "layers": [
+      "base solid bg_base",
+      "radial blob bg_blob_top_left, ~60% frame width, top-left, blurred, 75% opacity",
+      "radial blob bg_blob_mid_right, ~50% width, mid-right, 55% opacity",
+      "radial glow bg_glow_bottom behind avatar, ellipse 80% wide, bottom-center (the warm yellow halo)"
+    ],
+    "motion": "blobs drift slowly (±20px, 10s sine)",
+    "particles": "optional: a few tiny yellow dots floating up on emphasis beats (success, reveal)"
+  },
+  "motion": {
+    "_note": "Everything uses spring/ease-out, never linear.",
+    "springs": {
+      "card_in": {
+        "damping": 18,
+        "stiffness": 140,
+        "mass": 0.9,
+        "from": "translateY(40px) scale(.96) opacity 0",
+        "to": "identity"
+      },
+      "card_out": "opacity 1→0 + blur 0→10px + scale 1→.97 over 8 frames",
+      "item_stagger_frames": 5,
+      "check_pop": "scale 0→1.25→1 over 10 frames when a checkbox completes"
+    },
+    "scene_transition": "No hard cuts. Outgoing hero card blurs and fades while eyebrow/headline change; incoming card springs in 6-10 frames after the first headline word.",
+    "headline_swap": "Old headline fades out (4 frames), new headline words reveal one by one.",
+    "avatar_motion": [
+      "continuous breathing bob (sin, 2.2 rad/s, ±1.6px)",
+      "continuous head sway (±1.2°)",
+      "pose changes ease-out cubic over ~14 frames",
+      "pose chosen per beat — see avatar_poses"
+    ],
+    "cursor": "Black-outlined white arrow cursor glides along a bezier path to a target, then clicks: an accent_blue ring expands from the tip (scale 0.6→1.6, opacity .5→0, 12 frames) and the target gets hover/selected state.",
+    "typing": "Terminal/prompt text types at ~35 chars/sec with a block caret (accent_yellow) blinking every 15 frames.",
+    "progress": "Checklist items complete sequentially (empty circle → yellow filled circle with black tick) ~12 frames apart; optional thin yellow progress bar on a blue-soft track."
+  },
+  "avatar_poses": {
+    "_note": "Viewer-left arm = 'L', viewer-right arm = 'R'.",
+    "idle": "arms relaxed — default while a card is being read",
+    "talk": "both forearms slightly raised outward — explanatory beats",
+    "point": "L arm raised, index finger visible — when headline names a thing on the card, or says 'first / next / step N'",
+    "wave": "R arm raised and waving — ONLY hook (first 1-2s) and final CTA",
+    "rule_of_thumb": "Change pose every 2-4s; never hold one >5s. point ~40%, idle ~40%, talk ~15%, wave only start/end."
+  },
+  "components": {
+    "_note": "Build each once as a React component. All cards: white bg, radius 28px@1080, shadow (0 24px 60px rgba(10,12,20,.10)), 1px card_border.",
+    "StepPill": "Black rounded-full pill, white text 'Step N · Topic', small yellow dot on the left. Appears alone first on a new step, then the real UI scene fades in.",
+    "ChecklistCard": "White card. Small-caps title ('7 STEPS') then rows: numbered black circle OR empty/yellow-filled circle + label (left) + optional muted right-aligned hint. Used for overview AND progress.",
+    "TriCard": "Three small white square cards in a row, each with an icon and bold title + muted subtitle; pop in with 5-frame stagger. Icon tile background = accent_blue_soft, icon stroke = accent_blue.",
+    "FileExplorerCard": "Fake OS file window: three grey dots, centered title, breadcrumb bar, toolbar (black '+ New' button, ghost Cut/Copy/Paste), then pale-blue folder icons with labels. Selected folder turns solid accent_yellow with black outlined label.",
+    "DarkPromptCard": "dark_card_bg, mono text, small uppercase header ('PROMPT 1 · SETUP') left and a yellow 'Copy' chip (black text) right. Placeholders inside are inline yellow-tinted chips. Text types in.",
+    "ChatInputCard": "White rounded input box with placeholder and a small model-selector chip bottom-right; round black send button with white arrow.",
+    "ModelPickerCard": "Dropdown list: model names with muted tag on right; hovered row has soft blue tint; separator then 'Effort — High'.",
+    "BrowserErrorCard": "Blurred/ghosted web page with a big translucent black circle-X (not red) over it — signals 'don't do it this way'.",
+    "TranscribeWaveCard": "White card, header row (app icon + 'Transcribing · file.mov'), a blue waveform of ~60 animated vertical bars (active bars yellow), then timestamped caption lines.",
+    "BadgeCircle": "Big yellow filled circle with black bold text ('3+' and 'reels minimum'), pops in with overshoot at a card corner.",
+    "BigCheck": "Large yellow circle with black tick, scale-in with overshoot, blue + yellow particles bursting outward.",
+    "PhoneMockup": "Black-bordered phone frame (radius ~48px) showing a result clip or doc; floating yellow chip(s) pop in beside it (e.g. 'Edited by Claude ✓'), plus dark chips for example change-requests.",
+    "CollageBackdrop": "Hook only: 8-10 tilted white phone-cards in a loose fan, with a large dark terminal window on top.",
+    "PixelTitle": "Retro dot-matrix pixel text in accent_yellow on dark terminal ('PRODUCT NAME' on two lines), blinking blue prompt line '> edit my reel' under it.",
+    "CTAPills": "Two pills at bottom: black 'Follow @handle' (white text) and a white pill 'Comment' + yellow 'KEYWORD' chip with black text.",
+    "Wordmark": "Brand text logo, bottom-right of avatar area, always visible except final CTA."
+  },
+  "scene_grammar": {
+    "_note": "Each beat = [eyebrow] + [headline reveal] + [hero card] + [avatar pose]. One beat ≈ 1.5-4s. Total ≈ 25-35 beats.",
+    "beat_template": {
+      "eyebrow": "// step N · topic",
+      "headline": "3-8 words, voiceover-synced, keyword in accent_blue",
+      "hero": "one component from `components`",
+      "avatar_pose": "from avatar_poses",
+      "enter": "card_in spring",
+      "exit": "card_out blur-fade when next beat's hero differs"
+    },
+    "step_structure": [
+      "1) StepPill alone with headline naming the step (0.5-1s)",
+      "2) The UI card that SHOWS the step, with cursor/typing/ticks animating the action (3-8s)",
+      "3) Optional second state of same card while headline updates"
+    ],
+    "pacing": "Fast. New headline phrase every ~1.5-2.5s. Cards persist across 2-4 headline changes when the visual still applies."
+  },
+  "flow": [
+    {
+      "id": "hook",
+      "t_sec": [0, 4],
+      "eyebrow": "// topic · hook",
+      "headline": "Everyone's now doing X with [Tool]",
+      "hero": "CollageBackdrop + PixelTitle terminal (dark window, yellow pixel title, typing prompt line)",
+      "avatar_pose": "wave",
+      "notes": "Collage = social proof. Yellow sparkles drift."
+    },
+    {
+      "id": "promise",
+      "t_sec": [4, 6],
+      "eyebrow": "// topic · hook",
+      "headline": "…so I'll show you exactly how, step by step",
+      "hero": "collage + terminal blur out; three ghosted chips 'Step 1? Step 2? Step 3?' float in then fade",
+      "avatar_pose": "idle → talk"
+    },
+    {
+      "id": "overview",
+      "t_sec": [6, 10],
+      "eyebrow": "// every prompt · skill · tool",
+      "headline": "I'll show how to set it up",
+      "hero": "ChecklistCard 'N STEPS' with numbered black circles; rows appear one by one (3 first, then all N)",
+      "avatar_pose": "talk, then point"
+    },
+    {
+      "id": "promise_free",
+      "t_sec": [10, 14],
+      "eyebrow": "// every prompt · skill · tool",
+      "headline": "Every prompt, skill and tool — all of it, free",
+      "hero": "single card 'Prompt · copy–paste' pops in, then TriCard of three: Prompt (copy · paste), Skill (your style), Tool (all free)",
+      "avatar_pose": "idle"
+    },
+    {
+      "id": "step1",
+      "t_sec": [14, 20],
+      "eyebrow": "// step 1 · app/setup",
+      "headline": "First, [Tool]",
+      "hero": "StepPill 'Step 1 · …' → BrowserErrorCard (big black X = wrong way) → app window with Chat/Code toggle and dropdown (Local / Cloud); cursor clicks 'Local'; small dark chip 'Tool can see your files'",
+      "avatar_pose": "point"
+    },
+    {
+      "id": "step2",
+      "t_sec": [20, 28],
+      "eyebrow": "// step 2 · make the folder",
+      "headline": "Next, [Folder Name]. Raw, references, exports.",
+      "hero": "FileExplorerCard: Documents/Music/[Folder Name] — cursor selects the new folder; then card swaps to its inside with three subfolders appearing one by one: raw / references / exports, each with muted caption ('your clips', 'reels you like', 'finished edits')",
+      "avatar_pose": "point → idle → point"
+    },
+    {
+      "id": "step3",
+      "t_sec": [28, 34],
+      "eyebrow": "// step 3 · install the tools",
+      "headline": "Install these repos. One prompt does it all.",
+      "hero": "ChecklistCard-style 'GitHub repos' list (4 repos, mono name + grey description) → DarkPromptCard 'PROMPT 1 · SETUP' typing → ChatInputCard with cursor clicking send → ChecklistCard 'Tool · setting up your editor' with items ticking: dependency A ✓, B ✓, then C, D, E",
+      "avatar_pose": "idle → point → idle"
+    },
+    {
+      "id": "step4",
+      "t_sec": [34, 42],
+      "eyebrow": "// step 4 · api key",
+      "headline": "Then, ServiceName. Create an API key. Paste it.",
+      "hero": "Fake settings page with 'API keys' header and '+ Create key' button → modal 'API key created ✓' with masked key and copy icon; cursor clicks → TranscribeWaveCard: animated waveform + timestamped lines",
+      "avatar_pose": "idle → talk → point"
+    },
+    {
+      "id": "step5",
+      "t_sec": [42, 58],
+      "eyebrow": "// step 5 · teach your style",
+      "headline": "Teach [Tool] your style. Share three reels minimum.",
+      "hero": "ChatInputCard with typed chip 'Learn my editing style from these reels' → three thumbnail reel cards drop in → DarkPromptCard 'PROMPT 3 · LEARN MY STYLE' with reel URLs in yellow chips → BadgeCircle '3+ reels minimum' pops in → ChecklistCard 'Your style, broken down' ticking: Pacing, Hook, Captions, Graphics, Sound (muted right-aligned detail each)",
+      "avatar_pose": "idle → talk → point"
+    },
+    {
+      "id": "step6",
+      "t_sec": [58, 62],
+      "eyebrow": "// step 6 · add your footage",
+      "headline": "Drop your raw videos in the raw folder.",
+      "hero": "FileExplorerCard with raw/references/exports; a small video-file card drags in with cursor and drops into 'raw' (caption changes to '1 video ✓'); dark 'Ctrl + V' key chip appears",
+      "avatar_pose": "idle"
+    },
+    {
+      "id": "step7",
+      "t_sec": [62, 68],
+      "eyebrow": "// step 7 · edit",
+      "headline": "Pick [Best Model]. Send the prompt. Skill does the work.",
+      "hero": "ModelPickerCard (cursor moves down list, lands on best model) above ChatInputCard → DarkPromptCard 'PROMPT 4 · EDIT' typing → ChecklistCard 'Tool · editing your reel' with yellow progress bar and ticks: Transcribed, Cut pauses + filler, Captions + keywords, Graphics + sound, Rendered",
+      "avatar_pose": "idle → point → point"
+    },
+    {
+      "id": "result",
+      "t_sec": [68, 76],
+      "eyebrow": "// that's it",
+      "headline": "Done. Want changes? Just ask.",
+      "hero": "BigCheck with particle burst → PhoneMockup playing the final result, yellow chip 'Edited by Claude ✓', two dark chips with sample requests ('Make the captions bigger') that slide in and blur out",
+      "avatar_pose": "talk → point (arm toward phone)"
+    },
+    {
+      "id": "free_guide",
+      "t_sec": [76, 80],
+      "eyebrow": "// free guide",
+      "headline": "Free guide. Comment EDIT.",
+      "hero": "PhoneMockup showing the guide doc (steps list + 'What you need' table) with yellow chip '+ FREE guide'; guide scrolls slowly; CTAPills slide up at bottom",
+      "avatar_pose": "point"
+    },
+    {
+      "id": "outro",
+      "t_sec": [80, 83],
+      "eyebrow": "(none)",
+      "headline": "(none — replaced by big wordmark)",
+      "hero": "Big centered Wordmark (~160px), below it 'Comment KEYWORD for the free guide' with KEYWORD in accent_blue, small muted 'Follow @handle · site'. Blue and yellow background blobs intensify slightly.",
+      "avatar_pose": "wave"
+    }
+  ],
+  "caption_rules": {
+    "language": "English only",
+    "voiceover_sync": "Headline words appear on the frame the word is spoken (±2 frames). No voiceover yet: 3.5 words/second.",
+    "emphasis": "Highlight in accent_blue the noun the viewer must remember (tool, folder, model, 'prompt', 'skill'). Max 2 highlighted words per headline.",
+    "length": "Max 8 words per headline, max 2 lines.",
+    "style": "Sentence case. No emoji. No outline/stroke. No background box."
+  },
+  "do_and_dont": {
+    "do": [
+      "Keep the same layout skeleton every scene (eyebrow, headline, hero card, avatar, wordmark)",
+      "Build fake-but-believable UI from HTML/CSS, not screenshots",
+      "Animate the ACTION on the card (cursor, typing, ticking)",
+      "Keep it light, airy, generous whitespace; blue for text accents, yellow for filled pops, black for weight",
+      "Avatar points at the card on key words; wave only at start/end"
+    ],
+    "dont": [
+      "No hard cuts, no flashy zooms, no heavy shadows, no neon gradients",
+      "No third accent color (no red, green, orange) — errors use black, success uses yellow",
+      "No yellow text on light backgrounds; no white text on yellow",
+      "No two hero cards on screen at once (except while one blurs out)",
+      "Don't cover the avatar's head with a card",
+      "No real brand screenshots unless the user supplies them"
+    ]
+  },
+  "remotion_notes": {
+    "composition": {
+      "id": "Reel",
+      "width": 1080,
+      "height": 1920,
+      "fps": 30
+    },
+    "structure": [
+      "Reel.tsx — <AbsoluteFill> with Background, then <Series>/<Sequence>s per flow item",
+      "Persistent layer (outside sequences): Background, AvatarRig, Wordmark, Headline (driven by captions array)",
+      "Per-scene layer: hero component inside <Sequence from durationInFrames>",
+      "data/script.ts — array of beats: { startFrame, endFrame, eyebrow, words:[{text,frame,accent?}], hero, pose }",
+      "theme.ts — export the `brand.colors` object; components read colors only from it",
+      "components/ — one file per entry in `components`"
+    ],
+    "avatar": "Import { AvatarRig } from './AvatarRig' and pass a timeline from beats' pose + startFrame. AvatarRig is pure (useCurrentFrame only) for parallel rendering.",
+    "rules": [
+      "Use useCurrentFrame/useVideoConfig/spring/interpolate only — NO CSS transitions, setTimeout, requestAnimationFrame or Math.random() at render time",
+      "Use seeded values for particles/waveforms (hash of index)",
+      "Load fonts with @remotion/google-fonts (SpaceGrotesk, Inter, JetBrainsMono)",
+      "Audio: <Audio src={staticFile('voice.mp3')} /> and derive word frames from a transcript JSON when available"
+    ]
+  }
+}

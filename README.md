@@ -152,13 +152,13 @@ the tool is, screeners, finding
 everything in less words, layman terms, less cultured,
 create a screen play for posting on social media
 
-use playstore, 4.2 rating, 10k installs
+use playstore, 4.2 rating, 10k installs, show mockup phones with screenshots i can put, 
 https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png
 
 logo icon https://optionxi.com/assets/images/logo_xi.png
 first plan the screenplay, then output the remotion,
 
-use skills GSAP for timing.
+use skills https://github.com/heygen-com/hyperframes use this
 ```
 
 ## Tips
