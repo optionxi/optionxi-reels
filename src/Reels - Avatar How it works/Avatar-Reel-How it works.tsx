@@ -8,13 +8,13 @@ import {
   interpolate,
   spring,
   useCurrentFrame,
-  useVideoConfig,
+  useVideoConfig, CanvasImage,
 } from "remotion";
 
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
 import { loadFont as loadPixel } from "@remotion/google-fonts/PressStart2P";
-import { AvatarRig, PoseKey, PoseName } from "./Avatar/avatar-rig";
+import { AvatarRig, PoseKey, PoseName } from "../Avatar/avatar-rig";
 
 /**
  * OptionXi — "How it works" explainer reel (9:16, 1080x1920, 30fps, 1350 frames = 45s)
@@ -27,6 +27,13 @@ import { AvatarRig, PoseKey, PoseName } from "./Avatar/avatar-rig";
  */
 
 export const REEL_DURATION = 1350;
+
+export const config = {
+  durationInFrames: REEL_DURATION,
+  fps: 30,
+  width: 1080,
+  height: 1920,
+};
 
 const { fontFamily: SANS } = loadInter("normal", { weights: ["400", "500", "600", "700", "800"], subsets: ["latin"] });
 const { fontFamily: MONO } = loadMono("normal", { weights: ["400", "500"], subsets: ["latin"] });
@@ -734,21 +741,32 @@ const Sfx: React.FC = () => (
 
 /* ───────────────────────── composition ───────────────────────── */
 export const Reel: React.FC = () => (
-  <AbsoluteFill style={{ fontFamily: SANS, background: C.bg }}>
-    <Background />
-    <Sfx />
-    <Headline />
-    {BEATS.map((b) => (
-      <Sequence key={b.id} from={b.start} durationInFrames={b.end - b.start}>
-        <SceneFor beat={b} />
-      </Sequence>
-    ))}
-    {/* avatar: bottom-center, y 66–98% of frame; hero zone ends at 62% so cards never cover the head */}
-    <div style={{ position: "absolute", left: 340, top: 1280, width: 400, height: 600 }}>
-      <AvatarRig timeline={TIMELINE} />
-    </div>
-    <Wordmark />
-  </AbsoluteFill>
+  <>
+    <AbsoluteFill style={{ fontFamily: SANS, background: C.bg }}>
+      <Background />
+      <Sfx />
+      <Headline />
+      {BEATS.map((b) => (
+        <Sequence key={b.id} from={b.start} durationInFrames={b.end - b.start}>
+          <SceneFor beat={b} />
+        </Sequence>
+      ))}
+      {/* avatar: bottom-center, y 66–98% of frame; hero zone ends at 62% so cards never cover the head */}
+      <div style={{ position: "absolute", left: 340, top: 1280, width: 400, height: 600 }}>
+        <AvatarRig timeline={TIMELINE} />
+      </div>
+      <Wordmark />
+    </AbsoluteFill>
+    <CanvasImage
+      src={staticFile("instagram-reels-safe-zone.png")}
+      from={51}
+      style={{ position: "absolute" }}
+    />
+    <CanvasImage
+      src={staticFile("instagram-reels-safe-zone.png")}
+      style={{ position: "absolute", width: 1080, height: 1920 }}
+    />
+  </>
 );
 
 export default Reel;

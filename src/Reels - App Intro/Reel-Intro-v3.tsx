@@ -35,6 +35,16 @@ import {
 } from "remotion";
 
 // ───────────────────────── config ─────────────────────────
+export const REEL_DURATION = 900;
+
+export const config = {
+  durationInFrames: REEL_DURATION,
+  fps: 30,
+  width: 1080,
+  height: 1920,
+};
+
+
 const DEBUG_SAFE = false;
 const SAFE = { top: 250, bottom: 1580, side: 60 };
 

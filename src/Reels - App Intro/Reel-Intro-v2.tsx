@@ -25,7 +25,6 @@ import {
   useVideoConfig,
 } from "remotion";
 
-export const REEL = {durationInFrames: 900, fps: 30, width: 1080, height: 1920} as const;
 
 const SHOW_SAFE_GUIDES = false;
 

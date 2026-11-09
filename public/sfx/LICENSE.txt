@@ -1,0 +1,2 @@
+All sounds: Kenney (www.kenney.nl) - Interface Sounds and Impact Sounds, CC0 1.0 (public domain). No attribution required.
+Source mirrors: github.com/Calinou/kenney-interface-sounds, github.com/Boyquotes/kenney-impact-sounds-for-godot

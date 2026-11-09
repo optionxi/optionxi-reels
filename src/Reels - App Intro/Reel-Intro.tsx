@@ -54,6 +54,19 @@ const clamp = {extrapolateLeft: "clamp", extrapolateRight: "clamp"} as const;
 /* bottom ~430px: caption, audio, buttons overlay                       */
 /* sides 72px  : keeps text off the edges / right action rail           */
 /* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/* Config                                                              */
+/* ------------------------------------------------------------------ */
+export const REEL_DURATION = 900;
+
+export const config = {
+  durationInFrames: REEL_DURATION,
+  fps: 30,
+  width: 1080,
+  height: 1920,
+};
+
 const W = 1080;
 const H = 1920;
 const SAFE = {top: 250, bottom: 430, side: 72};

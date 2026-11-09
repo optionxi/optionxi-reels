@@ -16,6 +16,13 @@ import {
 /*  Register in Root.tsx with the constants below.                            */
 /* -------------------------------------------------------------------------- */
 
+export const config = {
+  durationInFrames: 600,
+  fps: 30,
+  width: 1920,
+  height: 1080,
+};
+
 // Scene timing (frames @30fps)
 const S1 = {from: 0, dur: 90}; // hook
 const S2 = {from: 90, dur: 90}; // virtual trading

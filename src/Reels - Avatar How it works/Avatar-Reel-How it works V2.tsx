@@ -11,7 +11,7 @@ import {
 import { loadFont as loadGrotesk } from "@remotion/google-fonts/SpaceGrotesk";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
-import { AvatarRig, PoseKey, PoseName } from "./Avatar/avatar-rig-ch2";
+import { AvatarRig, PoseKey, PoseName } from "../Avatar/avatar-rig-ch2";
 
 /**
  * OptionXi — "How OptionXi works" reel. 1080x1920, 30fps, 900 frames (30s).
@@ -20,6 +20,15 @@ import { AvatarRig, PoseKey, PoseName } from "./Avatar/avatar-rig-ch2";
  * Needs: npm i @remotion/google-fonts
  * All data shown on screen (prices, repo names) is sample/placeholder.
  */
+
+export const REEL_DURATION = 600;
+
+export const config = {
+  durationInFrames: REEL_DURATION,
+  fps: 30,
+  width: 1080,
+  height: 1920,
+};
 
 /* ───────────────────────── theme ───────────────────────── */
 const C = {
