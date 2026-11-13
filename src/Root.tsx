@@ -18,8 +18,8 @@ export const RemotionRoot: React.FC = () => (
   <>
     {/* Active reel — shown first in Studio */}
     
-    <Composition id="VolumeJumps"  component={ReelVolumeJumps} {...configVolumeJumps} />
-    <Composition id="ScreenersPro" component={ReelScreenerPro} {...configReelScreenerPro} />
+    {/* <Composition id="VolumeJumps"  component={ReelVolumeJumps} {...configVolumeJumps} />
+    <Composition id="ScreenersPro" component={ReelScreenerPro} {...configReelScreenerPro} /> */}
     <Composition id="OpenSource" component={ReelOpenSource} {...configOpenSource} />.
 
     {/* Other reels — keep for reference / quick switching */}

@@ -62,19 +62,6 @@ npm run dev          # Remotion Studio with live preview
 | `npm run dev` | Open Remotion Studio |
 | `npm run typecheck` | Type check the project |
 
-## Rendering
-
-```bash
-# Full quality
-npx remotion render src/index.ts OptionXiReel-Intro out/OptionXiReel-Intro.mp4
-npx remotion render src/index.ts OptionXiReel-Screeners out/OptionXiReel-Screeners.mp4
-
-# Smaller file for sharing (higher CRF = smaller file, lower quality)
-npx remotion render src/index.ts OptionXiReel-Intro out/intro-small.mp4 --crf=28
-
-# Single frame (thumbnail or layout check)
-npx remotion still src/index.ts OptionXiReel-Intro out/frame.png --frame=300
-```
 
 Renders land in `out/` (git-ignored).
 
@@ -206,7 +193,6 @@ find the timing, add script, so i can paste to eleven labs, to generate audio
 <summary><b>4. Libraries to mention</b></summary>
 
 ```text
-GSAP
 Framer motion
 ```
 </details>
@@ -234,8 +220,6 @@ https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_gene
 
 logo icon https://optionxi.com/assets/images/logo_xi.png
 first plan the screenplay, then output the remotion,
-
-use skills https://github.com/heygen-com/hyperframes use this
 ```
 </details>
 

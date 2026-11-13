@@ -162,7 +162,6 @@ When asked to produce a reel "in this style":
 2. For each clause, pick ONE hero object that visualizes the key noun. Build it from the card system above.
 3. Mark one accent word per clause (alternate serif-italic rust, blue sans, and a tinted pill for variety).
 4. Time captions word by word to the voiceover and overlap exits and entrances.
-5. Build as HTML/GSAP (e.g. HyperFrames) or After Effects at 1080x1920, 60 fps. Use springy easing, staggered entrances, and soft shadows.
 
 ## 4. Caveats
 - Exact font names, hex values and timings are visual estimates, not extracted from source files. Treat them as "close enough" and confirm against the video when fidelity matters.
