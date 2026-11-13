@@ -1,24 +1,7 @@
 /**
  * OptionXi — "Market Mood" reel  (1080x1920, 30fps, 900 frames = 30s)
  *
- * SCREENPLAY
- * ─────────────────────────────────────────────────────────────
- * 0:00–0:04  INTRO     Logo bursts in. "Is the market going UP or DOWN?"
- *                      UP / DOWN flip. "OptionXi reads it for you."
- * 0:04–0:14  SENTIMENT Phone slides up. 12 market gauges vote one by one.
- *                      Ring fills to 71%. Switch Nifty 50 -> Bank Nifty:
- *                      card turns red, 46% (low confidence).
- * 0:14–0:23  ALERTS    Phone with live chart. Candles draw, chance climbs.
- *                      Crosses 70% -> marker pops + alert drops in.
- * 0:23–0:30  CTA       Logo, Play Store badge, 4.2 rating, 10K+ installs.
- *
- * Instagram safe zone: nothing important above y=250 or below y=1580,
- * 60px side margins. Captions sit at top, phone below.
- *
- * Usage:
- *   import { Reel } from "./Reel-Sentiment";
- *   <Composition id="OptionXiReel" component={Reel}
- *     durationInFrames={900} fps={30} width={1080} height={1920} />
+ * Instagram safe zone from shared/safe-area.tsx.
  */
 import React from "react";
 import {
@@ -31,6 +14,15 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import {getSafe, SafeGuide} from "../shared/safe-area";
+
+export const config = {
+  durationInFrames: 900,
+  fps: 30,
+  width: 1080,
+  height: 1920,
+};
+const SAFE = getSafe(config);
 
 // ───────────────────────── tokens ─────────────────────────
 const C = {
@@ -182,9 +174,9 @@ const CapInner: React.FC<{
     <div
       style={{
         position: "absolute",
-        top: 270,
-        left: 70,
-        right: 70,
+        top: SAFE.y0,
+        left: SAFE.left,
+        right: SAFE.left,
         height: 260,
         opacity: out,
         transform: `translateY(${(1 - out) * -20}px)`,
@@ -227,7 +219,7 @@ const Phone: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     <div
       style={{
         position: "absolute",
-        left: (1080 - PHONE_W) / 2,
+        left: (config.width - PHONE_W) / 2,
         top: 560,
         width: PHONE_W,
         height: PHONE_H,
@@ -335,7 +327,6 @@ const Intro: React.FC = () => {
   const shrink = prog(f, 34, 62);
   const logoSize = interpolate(shrink, [0, 1], [320, 130]);
   const logoY = interpolate(shrink, [0, 1], [880, 420]);
-  // plays once: UP -> DOWN -> ?
   const stage = f < 60 ? -1 : f < 82 ? 0 : f < 104 ? 1 : 2;
   const stageStart = [60, 82, 104][Math.max(0, stage)];
   const label = ["UP ↗", "DOWN ↘", "?"][Math.max(0, stage)];
@@ -348,7 +339,6 @@ const Intro: React.FC = () => {
   });
   return (
     <SceneFade dur={130}>
-      {/* ripples */}
       {[0, 1, 2].map((i) => {
         const p = prog(f, 4 + i * 8, 44 + i * 8);
         return (
@@ -356,7 +346,7 @@ const Intro: React.FC = () => {
             key={i}
             style={{
               position: "absolute",
-              left: 540 - 400 * p,
+              left: config.width / 2 - 400 * p,
               top: 880 - 400 * p,
               width: 800 * p,
               height: 800 * p,
@@ -371,7 +361,7 @@ const Intro: React.FC = () => {
         src={LOGO}
         style={{
           position: "absolute",
-          left: 540 - logoSize / 2,
+          left: config.width / 2 - logoSize / 2,
           top: logoY - logoSize / 2,
           width: logoSize,
           height: logoSize,
@@ -384,8 +374,8 @@ const Intro: React.FC = () => {
         style={{
           position: "absolute",
           top: 620,
-          left: 70,
-          right: 70,
+          left: SAFE.left,
+          right: SAFE.left,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -463,7 +453,6 @@ const SentimentScreen: React.FC = () => {
           Live, updates by itself
         </div>
 
-        {/* index switch */}
         <div
           style={{
             position: "relative",
@@ -507,7 +496,6 @@ const SentimentScreen: React.FC = () => {
           ))}
         </div>
 
-        {/* hero card */}
         <div
           style={{
             position: "relative",
@@ -555,7 +543,6 @@ const SentimentScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* gauges */}
         <div
           style={{
             marginTop: 18,
@@ -598,7 +585,6 @@ const SentimentScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* trends */}
         <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
           {["Short-term", "Long-term"].map((t) => (
             <div
@@ -678,7 +664,6 @@ const AlertsScreen: React.FC = () => {
         <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: -1 }}>Market chart</div>
         <div style={{ fontSize: 16, color: C.mute }}>Nifty 50 · Today</div>
 
-        {/* auto-alert toggle */}
         <div
           style={{
             marginTop: 16,
@@ -718,7 +703,6 @@ const AlertsScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* chance meter */}
         <div
           style={{
             marginTop: 14,
@@ -750,7 +734,6 @@ const AlertsScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* chart */}
         <div
           style={{
             marginTop: 30,
@@ -805,7 +788,6 @@ const AlertsScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* notification */}
       <div
         style={{
           position: "absolute",
@@ -888,7 +870,6 @@ const Outro: React.FC = () => {
           </Sequence>
         </div>
 
-        {/* rating + installs */}
         <div style={{ display: "flex", gap: 28, marginTop: 70, opacity: prog(f, 28, 44) }}>
           <div
             style={{
@@ -955,9 +936,9 @@ const Outro: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          bottom: 350,
-          left: 80,
-          right: 80,
+          bottom: SAFE.bottom + 10,
+          left: SAFE.left,
+          right: SAFE.left,
           textAlign: "center",
           fontFamily: FONT,
           fontSize: 22,
@@ -987,6 +968,7 @@ export const Reel: React.FC = () => (
     <Sequence from={700} durationInFrames={200}>
       <Outro />
     </Sequence>
+    <SafeGuide />
   </AbsoluteFill>
 );
 

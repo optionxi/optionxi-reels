@@ -8,32 +8,23 @@ import {
   interpolate,
   spring,
   useCurrentFrame,
-  useVideoConfig, CanvasImage,
+  useVideoConfig,
 } from "remotion";
 
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
 import { loadFont as loadPixel } from "@remotion/google-fonts/PressStart2P";
 import { AvatarRig, PoseKey, PoseName } from "../Avatar/avatar-rig";
-
-/**
- * OptionXi — "How it works" explainer reel (9:16, 1080x1920, 30fps, 1350 frames = 45s)
- * Register in Root.tsx:
- *   import { Reel } from "./Reel-How-It-Works";
- *   <Composition id="OptionXiReel" component={Reel} durationInFrames={REEL_DURATION}
- *                fps={30} width={1080} height={1920} />
- * Needs: AvatarRig.tsx next to this file, and `npx remotion add @remotion/google-fonts`.
- * Fully deterministic: only useCurrentFrame / spring / interpolate, seeded hashes.
- */
-
-export const REEL_DURATION = 1350;
+import { getSafe, SafeGuide } from "../shared/safe-area";
 
 export const config = {
-  durationInFrames: REEL_DURATION,
+  durationInFrames: 1350,
   fps: 30,
   width: 1080,
   height: 1920,
 };
+const SAFE = getSafe(config);
+const OUTRO_START = config.durationInFrames - 105;
 
 const { fontFamily: SANS } = loadInter("normal", { weights: ["400", "500", "600", "700", "800"], subsets: ["latin"] });
 const { fontFamily: MONO } = loadMono("normal", { weights: ["400", "500"], subsets: ["latin"] });
@@ -46,9 +37,42 @@ const C = {
   ink: "#1C1B22", accent: "#F4714F", accentSoft: "#FCE3DA", card: "#FFFFFF",
   border: "rgba(28,27,34,0.06)", dark: "#1A1A1E", darkText: "#E8E6E1", muted: "#8C8A94", line: "#E4E2E8",
 };
-const FPS = 30;
 const WPS = 3.5;
-const OUTRO_START = 1245;
+
+/* ───────────────────────── layout (everything derives from SAFE) ─────────────────────────
+ *
+ *   y0 ┬ eyebrow
+ *      ├ headline (max 2 lines, centred)
+ *      ├ HERO  (designed at 950x768, uniformly scaled to fit above the avatar)
+ *      │
+ *      ├ AVATAR (bottom-anchored, bleeds into the bottom unsafe zone on purpose)
+ *   y1 ┴ wordmark sits on the safe bottom edge, right-aligned
+ *
+ * Tweak AVATAR_W to resize the avatar; the hero scale re-computes itself.
+ */
+const HERO = { w: 950, h: 768 }; // size every hero scene is designed at
+const AVATAR_SRC = { w: 397, h: 595 }; // size AvatarRig was designed at (we scale it, not resize it)
+const AVATAR_W = 540; // was 397
+const HERO_BLEED = 40; // how far the hero's box may dip into the avatar's empty headroom
+
+const L = (() => {
+  const headFs = 72;
+  const headLh = 1.1;
+  const headLines = 2;
+  const eyebrowTop = SAFE.y0;
+  const headTop = SAFE.y0 + 38;
+  const headH = Math.round(headFs * headLh * headLines);
+  const heroTop = headTop + headH + 24;
+
+  const avH = Math.round((AVATAR_W * AVATAR_SRC.h) / AVATAR_SRC.w);
+  const avTop = config.height - avH; // flush with the bottom edge
+  const avLeft = Math.round((config.width - AVATAR_W) / 2);
+
+  const heroScale = Math.min(1, (avTop + HERO_BLEED - heroTop) / HERO.h);
+  const heroLeft = Math.round((config.width - HERO.w) / 2);
+
+  return { headFs, headLh, eyebrowTop, headTop, headH, heroTop, heroLeft, heroScale, avH, avTop, avLeft };
+})();
 
 /* ───────────────────────── helpers ───────────────────────── */
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
@@ -67,7 +91,7 @@ const fadeUp = (f: number, start: number, dur = 6, dy = 14): React.CSSProperties
   return { opacity: p, transform: `translateY(${(1 - p) * dy}px)` };
 };
 const typed = (s: string, f: number, start: number, cps = 35) =>
-  s.slice(0, Math.max(0, Math.floor(((f - start) * cps) / FPS)));
+  s.slice(0, Math.max(0, Math.floor(((f - start) * cps) / config.fps)));
 const caret = (f: number) => (Math.floor(f / 15) % 2 === 0 ? "▌" : " ");
 
 const cardBase: React.CSSProperties = {
@@ -88,24 +112,23 @@ interface Beat {
   start: number;
   end: number;
   eyebrow: string;
-  headline: string; // *word* = accent (max 2 words, ≤ 8 words total)
+  headline: string;
   hero: HeroId;
-  step?: string;
   poses: PoseName[];
 }
 
 const BEATS: Beat[] = [
   { id: "hook", start: 0, end: 105, eyebrow: "optionxi · under the hood", headline: "How *OptionXi* actually works", hero: "hook", poses: ["wave"] },
   { id: "overview", start: 105, end: 195, eyebrow: "the engine", headline: "Four *steps,* start to finish", hero: "overview", poses: ["talk", "point"] },
-  { id: "step1", start: 195, end: 345, eyebrow: "step 1 · live data", headline: "*Python* on cloud pulls live data", hero: "pipeline", step: "Step 1 · Live data", poses: ["point", "idle"] },
-  { id: "step2", start: 345, end: 495, eyebrow: "step 2 · processing", headline: "We process it: *EMA,* *SMA,* more", hero: "indicators", step: "Step 2 · Processing", poses: ["point", "idle"] },
-  { id: "step3", start: 495, end: 615, eyebrow: "step 3 · storage", headline: "Everything lands in *Supabase*", hero: "database", step: "Step 3 · Storage", poses: ["idle", "point"] },
-  { id: "step4", start: 615, end: 765, eyebrow: "step 4 · the apps", headline: "*Flutter* for mobile, *Next.js* for web", hero: "apps", step: "Step 4 · The apps", poses: ["talk", "point"] },
+  { id: "step1", start: 195, end: 345, eyebrow: "step 1 · live data", headline: "*Python* on cloud pulls live data", hero: "pipeline", poses: ["point", "idle"] },
+  { id: "step2", start: 345, end: 495, eyebrow: "step 2 · processing", headline: "We process it: *EMA,* *SMA,* more", hero: "indicators", poses: ["point", "idle"] },
+  { id: "step3", start: 495, end: 615, eyebrow: "step 3 · storage", headline: "Everything lands in *Supabase*", hero: "database", poses: ["idle", "point"] },
+  { id: "step4", start: 615, end: 765, eyebrow: "step 4 · the apps", headline: "*Flutter* for mobile, *Next.js* for web", hero: "apps", poses: ["talk", "point"] },
   { id: "features", start: 765, end: 885, eyebrow: "what you get", headline: "Screeners, scanners and *auto* *alerts*", hero: "features", poses: ["idle", "point"] },
   { id: "mood", start: 885, end: 1005, eyebrow: "what you get", headline: "*Market* *mood* and AI analysis", hero: "mood", poses: ["talk", "point"] },
   { id: "algo", start: 1005, end: 1125, eyebrow: "for teams", headline: "Need your own algo? We *deploy* it", hero: "algo", poses: ["point", "idle"] },
   { id: "download", start: 1125, end: OUTRO_START, eyebrow: "try it", headline: "Free on *Google* *Play*", hero: "download", poses: ["talk", "point"] },
-  { id: "outro", start: OUTRO_START, end: REEL_DURATION, eyebrow: "", headline: "", hero: "outro", poses: ["wave"] },
+  { id: "outro", start: OUTRO_START, end: config.durationInFrames, eyebrow: "", headline: "", hero: "outro", poses: ["wave"] },
 ];
 
 interface Word { text: string; accent: boolean; frame: number }
@@ -114,7 +137,7 @@ const parseHeadline = (s: string, start: number): Word[] =>
     ? s.split(" ").map((t, i) => ({
         text: t.replace(/\*/g, ""),
         accent: t.startsWith("*"),
-        frame: start + 6 + Math.round((i * FPS) / WPS), // swap for transcript frames when a voiceover exists
+        frame: start + 6 + Math.round((i * config.fps) / WPS),
       }))
     : [];
 
@@ -123,6 +146,57 @@ const TIMELINE: PoseKey[] = BEATS.flatMap((b) =>
     frame: b.start === 0 && j === 0 ? 0 : b.start + Math.round((j * (b.end - b.start)) / b.poses.length),
     pose,
   }))
+);
+
+/* ───────────────────────── sound design ─────────────────────────
+ * Cues are BEAT-RELATIVE: the number is the frame inside the beat, i.e. the same
+ * number you see in the visual's own `fadeUp(f, N)` / `pop(f, N)` / `delay={N}`.
+ * Retime a beat in BEATS and its sounds follow automatically.
+ * Files expected in public/sfx/<name>.mp3
+ */
+type SfxName = "whoosh" | "pop" | "tick" | "type" | "ding" | "hit" | "click" | "success";
+type Cue = [name: SfxName, at: number, volume?: number];
+
+const SFX_MASTER = 1; // global fader, lower it if you add a voiceover track
+const SFX_DEFAULT_VOL = 0.7;
+const SFX_LEN = 90; // frames a one-shot is allowed to ring
+const WHOOSH_LEAD = 2; // whoosh lands slightly before the cut
+
+const CUES: Record<string, Cue[]> = {
+  hook: [["pop", 6], ["pop", 14], ["pop", 22], ["type", 40, 0.4], ["pop", 50]],
+  overview: [["pop", 2, 0.5], ["tick", 14], ["tick", 19], ["tick", 24], ["tick", 29]],
+  step1: [["pop", 22], ["pop", 30], ["pop", 36], ["tick", 44], ["tick", 54], ["tick", 64]],
+  step2: [["pop", 22], ["tick", 64], ["tick", 78], ["tick", 92]],
+  step3: [["pop", 22], ...[0, 1, 2, 3, 4, 5].map((i): Cue => ["tick", 34 + i * 8, 0.35])],
+  step4: [["pop", 22], ["pop", 28, 0.5], ["pop", 46], ["pop", 52, 0.5], ["pop", 80]],
+  features: [["pop", 10], ["pop", 15], ["pop", 20], ["ding", 62]],
+  mood: [["pop", 4, 0.5], ["pop", 16, 0.5], ["whoosh", 22, 0.3], ["hit", 50], ["tick", 48], ["tick", 62], ["tick", 76]],
+  algo: [["pop", 2, 0.5], ["type", 10, 0.4], ["click", 70], ["whoosh", 74, 0.4], ["tick", 88], ["tick", 98], ["tick", 108]],
+  download: [["pop", 4, 0.5], ["success", 30], ["pop", 46], ["pop", 58]],
+  outro: [["hit", 0], ["pop", 24]],
+};
+
+interface ScheduledSfx { name: SfxName; from: number; volume: number }
+const SFX: ScheduledSfx[] = BEATS.flatMap((b) => {
+  const cues: Cue[] = [
+    ...(b.hero === "outro" ? [] : ([["whoosh", -WHOOSH_LEAD, 0.5]] as Cue[])),
+    ...(CUES[b.id] ?? []),
+  ];
+  return cues.map(([name, at, volume = SFX_DEFAULT_VOL]) => ({
+    name,
+    from: Math.max(0, b.start + at),
+    volume: volume * SFX_MASTER,
+  }));
+});
+
+const Sfx: React.FC = () => (
+  <>
+    {SFX.map((s, i) => (
+      <Sequence key={`${s.name}-${s.from}-${i}`} from={s.from} durationInFrames={SFX_LEN} layout="none">
+        <Audio src={staticFile(`sfx/${s.name}.mp3`)} volume={s.volume} />
+      </Sequence>
+    ))}
+  </>
 );
 
 /* ───────────────────────── primitives ───────────────────────── */
@@ -141,26 +215,14 @@ const Pop: React.FC<{ delay?: number; style?: React.CSSProperties; children?: Re
   );
 };
 
-/** Absolute card that sits under the StepPill (hero zone is 950 x 768). */
 const StepCard: React.FC<{ h: number; children?: React.ReactNode }> = ({ h, children }) => (
-  <Pop delay={22} style={{ ...cardBase, position: "absolute", left: 0, top: 90, width: 950, height: h, overflow: "hidden" }}>
+  <Pop delay={22} style={{ ...cardBase, position: "absolute", left: 0, top: 90, width: HERO.w, height: h, overflow: "hidden" }}>
     {children}
   </Pop>
 );
 
-const StepPill: React.FC<{ label: string }> = ({ label }) => {
-  const f = useCurrentFrame();
-  return (
-    <div style={{ position: "absolute", left: 0, right: 0, top: 0, display: "flex", justifyContent: "center", ...fadeUp(f, 0, 8) }}>
-      <div style={{ background: C.ink, color: "#fff", borderRadius: 999, padding: "18px 38px", fontSize: 32, fontWeight: 600, display: "flex", alignItems: "center", gap: 14 }}>
-        <span style={{ width: 14, height: 14, borderRadius: 7, background: C.accent }} />
-        {label}
-      </div>
-    </div>
-  );
-};
-
-/** Hero zone wrapper: card_in spring, card_out blur-fade (last 8 frames of the beat). */
+/** Hero scenes are designed on a 950x768 stage. We centre it and scale uniformly (from top-centre)
+ *  so it always fits between the headline and the avatar. */
 const HeroFrame: React.FC<{ dur: number; delay?: number; children?: React.ReactNode }> = ({ dur, delay = 8, children }) => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -169,9 +231,10 @@ const HeroFrame: React.FC<{ dur: number; delay?: number; children?: React.ReactN
   return (
     <div
       style={{
-        position: "absolute", left: 65, top: 422, width: 950, height: 768,
+        position: "absolute", left: L.heroLeft, top: L.heroTop, width: HERO.w, height: HERO.h,
+        transformOrigin: "50% 0%",
         opacity: clamp(s) * (1 - out),
-        transform: `translateY(${(1 - s) * 40}px) scale(${(0.96 + 0.04 * s) * (1 - 0.03 * out)})`,
+        transform: `translateY(${(1 - s) * 40}px) scale(${L.heroScale * (0.96 + 0.04 * s) * (1 - 0.03 * out)})`,
         filter: `blur(${out * 10}px)`,
       }}
     >
@@ -221,7 +284,7 @@ const CardTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const Cursor: React.FC<{ f: number; from: [number, number]; to: [number, number]; start: number; dur: number }> = ({ f, from, to, start, dur }) => {
   const p = ease(clamp((f - start) / dur));
   const x = from[0] + (to[0] - from[0]) * p;
-  const y = from[1] + (to[1] - from[1]) * p + Math.sin(p * Math.PI) * -40; // gentle bezier-like arc
+  const y = from[1] + (to[1] - from[1]) * p + Math.sin(p * Math.PI) * -40;
   const c = clamp((f - (start + dur)) / 12);
   return (
     <>
@@ -260,15 +323,17 @@ const Chip: React.FC<{ f: number; t0: number; dark?: boolean; style?: React.CSSP
 /* ───────────────────────── persistent layer ───────────────────────── */
 const Background: React.FC = () => {
   const f = useCurrentFrame();
-  const t = f / FPS;
+  const t = f / config.fps;
   const dx = Math.sin((t * Math.PI * 2) / 10) * 20;
   const dy = Math.cos((t * Math.PI * 2) / 10) * 20;
   const boost = 1 + 0.25 * ease(clamp((f - OUTRO_START) / 20));
+  const glowW = 864;
   return (
     <AbsoluteFill style={{ background: C.bg, overflow: "hidden" }}>
       <div style={{ position: "absolute", left: -220 + dx, top: -160 + dy, width: 660, height: 660, borderRadius: "50%", background: `radial-gradient(circle, ${C.blobA} 0%, transparent 70%)`, opacity: Math.min(1, 0.7 * boost), filter: "blur(40px)" }} />
       <div style={{ position: "absolute", left: 720 - dx, top: 620 + dy, width: 540, height: 540, borderRadius: "50%", background: `radial-gradient(circle, ${C.blobB} 0%, transparent 70%)`, opacity: Math.min(1, 0.5 * boost), filter: "blur(40px)" }} />
-      <div style={{ position: "absolute", left: 108, top: 1400, width: 864, height: 620, borderRadius: "50%", background: `radial-gradient(ellipse, ${C.glow} 0%, transparent 70%)`, opacity: Math.min(1, 0.9 * boost) }} />
+      {/* warm glow sits behind the avatar, centred on it */}
+      <div style={{ position: "absolute", left: (config.width - glowW) / 2, top: L.avTop + 150, width: glowW, height: 620, borderRadius: "50%", background: `radial-gradient(ellipse, ${C.glow} 0%, transparent 70%)`, opacity: Math.min(1, 0.9 * boost) }} />
     </AbsoluteFill>
   );
 };
@@ -280,12 +345,15 @@ const Headline: React.FC = () => {
   const out = b.id === "outro" ? 0 : clamp((f - (b.end - 4)) / 4);
   return (
     <>
-      <div style={{ position: "absolute", left: 54, top: 163, fontFamily: MONO, fontSize: 26, color: C.muted, opacity: ease(clamp((f - b.start) / 6)) * (1 - out) }}>
-        {b.eyebrow ? `// ${b.eyebrow}` : ""}
-      </div>
-      <div style={{ position: "absolute", left: 54, top: 202, width: 972, fontSize: 80, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.08, color: C.ink, opacity: 1 - out }}>
+      <div
+        style={{
+          position: "absolute", left: SAFE.left, top: L.headTop, width: SAFE.w, height: L.headH,
+          display: "flex", flexWrap: "wrap", justifyContent: "center", alignContent: "flex-start", columnGap: "0.26em",
+          fontSize: L.headFs, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: L.headLh, color: C.ink, opacity: 1 - out,
+        }}
+      >
         {words.map((w, i) => (
-          <span key={i} style={{ display: "inline-block", marginRight: "0.26em", color: w.accent ? C.accent : C.ink, ...fadeUp(f, w.frame, 6, 14) }}>
+          <span key={i} style={{ color: w.accent ? C.accent : C.ink, ...fadeUp(f, w.frame, 6, 14) }}>
             {w.text}
           </span>
         ))}
@@ -294,18 +362,18 @@ const Headline: React.FC = () => {
   );
 };
 
+/** Sits on the safe bottom edge, right-aligned to the safe side margin. */
 const Wordmark: React.FC = () => {
   const f = useCurrentFrame();
   const op = ease(clamp(f / 12)) * (1 - clamp((f - (OUTRO_START - 8)) / 8));
   return (
-    <div style={{ position: "absolute", right: 54, top: 1344, fontSize: 46, fontWeight: 700, letterSpacing: "-0.03em", color: C.ink, opacity: op }}>
+    <div style={{ position: "absolute", right: config.width - SAFE.right, bottom: config.height - SAFE.y1, fontSize: 40, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1, color: C.ink, opacity: op }}>
       {BRAND.name}
     </div>
   );
 };
 
-/* ───────────────────────── hero scenes ───────────────────────── */
-/* 1 · Hook: collage + terminal */
+/* ───────────────────────── hero scenes (all drawn on the 950x768 stage) ───────────────────────── */
 const MiniScreen: React.FC<{ label: string; i: number }> = ({ label, i }) => (
   <div style={{ ...cardBase, width: 300, height: 420, padding: 24 }}>
     <div style={{ fontSize: 28, fontWeight: 700 }}>{label}</div>
@@ -350,18 +418,12 @@ const HookHero: React.FC = () => {
       </div>
       <Chip f={f} t0={50} style={{ left: 600, top: 150, transform: `scale(${pop(f, 50, 12)}) rotate(4deg)` }}>{BRAND.installs}</Chip>
       {Array.from({ length: 9 }, (_, i) => (
-        <div key={i} style={{ position: "absolute", left: hash(i) * 930, top: 768 - ((f * 1.6 + hash(i + 9) * 768) % 768), width: 10, height: 10, borderRadius: 5, background: C.accent, opacity: f > 20 ? 0.5 : 0 }} />
+        <div key={i} style={{ position: "absolute", left: hash(i) * 930, top: HERO.h - ((f * 1.6 + hash(i + 9) * HERO.h) % HERO.h), width: 10, height: 10, borderRadius: 5, background: C.accent, opacity: f > 20 ? 0.5 : 0 }} />
       ))}
     </>
   );
 };
 
-/* 2 · Overview */
-const OverviewHero: React.FC = () => (
-  <Pop delay={0} style={{ ...cardBase, position: "absolute", left: 0, top: 40, width: 950, padding: 44 }}>
-    <OverviewInner />
-  </Pop>
-);
 const OverviewInner: React.FC = () => {
   const f = useCurrentFrame();
   return (
@@ -378,8 +440,12 @@ const OverviewInner: React.FC = () => {
     </>
   );
 };
+const OverviewHero: React.FC = () => (
+  <Pop delay={0} style={{ ...cardBase, position: "absolute", left: 0, top: 40, width: HERO.w, padding: 44 }}>
+    <OverviewInner />
+  </Pop>
+);
 
-/* 3 · Step 1 — live data pipeline */
 const PipelineCard: React.FC = () => {
   const f = useCurrentFrame();
   const lanes = [{ y0: 140, y1: 240 }, { y0: 340, y1: 320 }];
@@ -392,7 +458,7 @@ const PipelineCard: React.FC = () => {
           {n}
         </div>
       ))}
-      <svg width={950} height={560} style={{ position: "absolute", left: 0, top: 0 }}>
+      <svg width={HERO.w} height={560} style={{ position: "absolute", left: 0, top: 0 }}>
         {lanes.map((l, i) => (
           <g key={i}>
             <line x1={340} y1={l.y0} x2={520} y2={l.y1} stroke={C.line} strokeWidth={4} strokeDasharray="10 10" />
@@ -420,7 +486,6 @@ const PipelineCard: React.FC = () => {
   );
 };
 
-/* 4 · Step 2 — indicators */
 const IndicatorCard: React.FC = () => {
   const f = useCurrentFrame();
   const N = 44;
@@ -453,7 +518,6 @@ const IndicatorCard: React.FC = () => {
   );
 };
 
-/* 5 · Step 3 — Supabase table */
 const DatabaseCard: React.FC = () => {
   const f = useCurrentFrame();
   const rows = [["NIFTY 50", 24800], ["BANKNIFTY", 52400], ["RELIANCE", 1420], ["TCS", 3980], ["INFY", 1810], ["HDFCBANK", 1720]] as const;
@@ -490,19 +554,19 @@ const DatabaseCard: React.FC = () => {
   );
 };
 
-/* 6 · Step 4 — apps */
 const AppsCard: React.FC = () => {
   const f = useCurrentFrame();
   const drawA = 1 - ease(clamp((f - 36) / 22));
   const bars = (n: number, o: number) => Array.from({ length: n }, (_, k) => (
     <div key={k} style={{ height: 26, borderRadius: 8, marginTop: 14, background: k === 0 ? C.accentSoft : "#F1EFF4", width: `${55 + hash(k + o) * 45}%` }} />
   ));
+  const chipP = pop(f, 80, 12);
   return (
     <StepCard h={660}>
       <div style={{ position: "absolute", left: 345, top: 20, width: 260, height: 64, borderRadius: 32, background: C.ink, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, fontWeight: 600, ...fadeUp(f, 28) }}>
         Supabase
       </div>
-      <svg width={950} height={200} style={{ position: "absolute", left: 0, top: 0 }}>
+      <svg width={HERO.w} height={200} style={{ position: "absolute", left: 0, top: 0 }}>
         <path d="M475 84 L185 140" pathLength={1} strokeDasharray={1} strokeDashoffset={drawA} stroke={C.accent} strokeWidth={4} fill="none" />
         <path d="M475 84 L625 160" pathLength={1} strokeDasharray={1} strokeDashoffset={drawA} stroke={C.accent} strokeWidth={4} fill="none" />
       </svg>
@@ -518,12 +582,16 @@ const AppsCard: React.FC = () => {
         <div style={{ padding: "6px 26px" }}>{bars(6, 7)}</div>
       </div>
       <div style={{ position: "absolute", left: 360, top: 504, width: 530, textAlign: "center", fontSize: 24, color: C.muted, ...fadeUp(f, 62) }}>Next.js · web</div>
-      <Chip f={f} t0={80} dark style={{ left: 190, top: 582 }}>{"</>"} Both front ends are open source</Chip>
+      {/* chip centred on the card instead of a hand-guessed left offset */}
+      <div style={{ position: "absolute", left: 0, right: 0, top: 574, display: "flex", justifyContent: "center" }}>
+        <div style={{ padding: "14px 28px", borderRadius: 999, fontSize: 30, fontWeight: 600, whiteSpace: "nowrap", background: C.ink, color: "#fff", opacity: clamp(chipP), transform: `scale(${chipP})`, boxShadow: "0 14px 30px rgba(28,27,34,.15)" }}>
+          {"</>"} Both front ends are open source
+        </div>
+      </div>
     </StepCard>
   );
 };
 
-/* 7 · Features: screeners, scanners, alerts */
 const ICONS: Record<string, React.ReactNode> = {
   Screeners: <path d="M4 5h16l-6 7v6l-4 2v-8z" />,
   Scanners: <><circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="8" /><path d="M12 12l6-6" /></>,
@@ -555,7 +623,6 @@ const FeaturesHero: React.FC = () => {
   );
 };
 
-/* 8 · Market mood + AI analysis */
 const MoodHero: React.FC = () => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -600,14 +667,13 @@ const MoodHero: React.FC = () => {
   );
 };
 
-/* 9 · Custom algo deployment */
 const AlgoHero: React.FC = () => {
   const f = useCurrentFrame();
   const code = 'def my_algo(d):\n  if d.ema > d.sma:\n    return "BUY"';
   const swap = clamp((f - 74) / 10);
   return (
     <>
-      <Pop delay={2} style={{ position: "absolute", left: 0, top: 40, width: 950, height: 500, borderRadius: 28, background: C.dark, boxShadow: "0 24px 60px rgba(28,27,34,.18)", padding: 40, boxSizing: "border-box", opacity: 1 - swap, filter: `blur(${swap * 10}px)` } as React.CSSProperties}>
+      <Pop delay={2} style={{ position: "absolute", left: 0, top: 40, width: HERO.w, height: 500, borderRadius: 28, background: C.dark, boxShadow: "0 24px 60px rgba(28,27,34,.18)", padding: 40, boxSizing: "border-box", opacity: 1 - swap, filter: `blur(${swap * 10}px)` } as React.CSSProperties}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontSize: 22, letterSpacing: "0.14em", color: "#8D8A95", fontWeight: 600 }}>YOUR STRATEGY</div>
           <div style={{ background: C.accent, color: "#fff", borderRadius: 999, padding: "12px 34px", fontSize: 28, fontWeight: 600, transform: `scale(${f >= 70 && f < 76 ? 0.94 : 1})` }}>Deploy</div>
@@ -616,9 +682,10 @@ const AlgoHero: React.FC = () => {
           {typed(code, f, 10)}<span style={{ color: C.accent }}>{caret(f)}</span>
         </div>
       </Pop>
-      {f < 90 && <Cursor f={f} from={[520, 420]} to={[830, 70]} start={50} dur={20} />}
+      {/* cursor lands on the centre of the Deploy button (card right padding 40 → button centre ≈ x 830, y 108) */}
+      {f < 90 && <Cursor f={f} from={[520, 420]} to={[815, 100]} start={50} dur={20} />}
       {f >= 74 && (
-        <div style={{ ...cardBase, position: "absolute", left: 0, top: 40, width: 950, padding: 44, opacity: swap, transform: `scale(${0.97 + 0.03 * swap})` }}>
+        <div style={{ ...cardBase, position: "absolute", left: 0, top: 40, width: HERO.w, padding: 44, opacity: swap, transform: `scale(${0.97 + 0.03 * swap})` }}>
           <CardTitle>Deployed on {BRAND.name} cloud</CardTitle>
           <div style={{ marginTop: 18 }}>
             <Rows f={f} t0={80} tickAt={88} tickGap={10} rows={[{ label: "Strategy received" }, { label: "Deployed on cloud" }, { label: "Running live" }]} />
@@ -629,7 +696,6 @@ const AlgoHero: React.FC = () => {
   );
 };
 
-/* 10 · Download / result */
 const DownloadHero: React.FC = () => {
   const f = useCurrentFrame();
   const big = pop(f, 30, 14);
@@ -654,27 +720,27 @@ const DownloadHero: React.FC = () => {
         <svg width="80" height="80" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </div>
       <Burst f={f} t0={34} cx={800} cy={110} />
-      <Chip f={f} t0={46} style={{ left: 640, top: 470 }}>{BRAND.installs}</Chip>
-      <Chip f={f} t0={58} dark style={{ left: 10, top: 300 }}>Free to download</Chip>
+      {/* chips kept inside the 950px stage (right edge ≤ 950) */}
+      <Chip f={f} t0={46} style={{ left: 660, top: 470 }}>{BRAND.installs}</Chip>
+      <Chip f={f} t0={58} dark style={{ left: 0, top: 300 }}>Free to download</Chip>
     </>
   );
 };
 
-/* 11 · Outro */
+/** Outro is centred inside the safe area (not the hero stage) and stacks its CTAs so nothing overflows 960px. */
 const Outro: React.FC = () => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
   const s = spring({ frame: f - 4, fps, config: { damping: 16, stiffness: 120, mass: 0.9 } });
   return (
-    <div style={{ position: "absolute", left: 0, right: 0, top: 430, display: "flex", flexDirection: "column", alignItems: "center", opacity: clamp(s), transform: `translateY(${(1 - s) * 40}px) scale(${0.94 + 0.06 * s})` }}>
+    <div style={{ position: "absolute", left: SAFE.left, width: SAFE.w, top: SAFE.y0 + 110, display: "flex", flexDirection: "column", alignItems: "center", opacity: clamp(s), transform: `translateY(${(1 - s) * 40}px) scale(${0.94 + 0.06 * s})` }}>
       <div style={{ fontSize: 170, fontWeight: 800, letterSpacing: "-0.05em", color: C.ink, lineHeight: 1 }}>
         option<span style={{ color: C.accent }}>xi</span>
       </div>
       <div style={{ marginTop: 34, fontSize: 46, fontWeight: 600, color: C.ink }}>
         Free on <span style={{ color: C.accent }}>{BRAND.store}</span>
       </div>
-      <div style={{ marginTop: 14, fontSize: 30, color: C.muted, fontFamily: MONO }}>Follow {BRAND.handle}</div>
-      <div style={{ marginTop: 60, display: "flex", gap: 24, ...fadeUp(f, 24, 10, 30) }}>
+      <div style={{ marginTop: 48, display: "flex", flexDirection: "column", alignItems: "center", gap: 22, ...fadeUp(f, 24, 10, 30) }}>
         <div style={{ background: C.ink, color: "#fff", borderRadius: 999, padding: "24px 44px", fontSize: 34, fontWeight: 600 }}>Follow {BRAND.handle}</div>
         <div style={{ ...cardBase, borderRadius: 999, padding: "16px 20px 16px 40px", fontSize: 34, fontWeight: 600, display: "flex", alignItems: "center", gap: 18 }}>
           Get it on <span style={{ background: C.accent, color: "#fff", borderRadius: 999, padding: "8px 26px" }}>{BRAND.store}</span>
@@ -684,7 +750,6 @@ const Outro: React.FC = () => {
   );
 };
 
-/* ───────────────────────── scene router ───────────────────────── */
 const BODIES: Record<Exclude<HeroId, "outro">, React.FC> = {
   hook: HookHero, overview: OverviewHero, pipeline: PipelineCard, indicators: IndicatorCard,
   database: DatabaseCard, apps: AppsCard, features: FeaturesHero, mood: MoodHero, algo: AlgoHero, download: DownloadHero,
@@ -694,52 +759,22 @@ const SceneFor: React.FC<{ beat: Beat }> = ({ beat }) => {
   if (beat.hero === "outro") return <Outro />;
   const Body = BODIES[beat.hero];
   return (
-    <HeroFrame dur={beat.end - beat.start} delay={beat.step ? 2 : 6}>
-      {beat.step && <StepPill label={beat.step} />}
+    <HeroFrame dur={beat.end - beat.start} delay={6}>
       <Body />
     </HeroFrame>
   );
 };
 
-
-const SFX: [string, number, number?][] = [
-  // beat whooshes
-  ...[0,105,195,345,495,615,765,885,1005,1125].map((f) => ["whoosh", f, 0.5] as [string, number, number]),
-  // hook
-  ["pop",6],["pop",14],["pop",22],["type",40,0.4],["pop",50],
-  // overview rows
-  ["tick",125],["tick",130],["tick",135],["tick",140],
-  // step 1
-  ["pop",219],["pop",225],["pop",231],["tick",239],["tick",249],["tick",259],
-  // step 2
-  ["tick",409],["tick",423],["tick",437],
-  // step 3 rows
-  ...[0,1,2,3,4,5].map((i) => ["tick", 529 + i * 8, 0.35] as [string, number, number]),
-  // step 4
-  ["pop",651],["pop",667],["pop",695],
-  // features
-  ["pop",775],["pop",780],["pop",785],["ding",827],
-  // mood
-  ["whoosh",907,0.3],["hit",935],["tick",933],["tick",947],["tick",961],
-  // algo
-  ["type",1015,0.4],["click",1075],["whoosh",1079,0.4],["tick",1093],["tick",1103],["tick",1113],
-  // download
-  ["success",1155],["pop",1171],["pop",1183],
-  // outro
-  ["hit",1245],["pop",1269],
-];
-
-const Sfx: React.FC = () => (
-  <>
-    {SFX.map(([name, from, vol = 0.7], i) => (
-      <Sequence key={i} from={from} durationInFrames={90}>
-        <Audio src={staticFile(`sfx/${name}.mp3`)} volume={vol} />
-      </Sequence>
-    ))}
-  </>
+/** Avatar is rendered at its original 397x595 design size and scaled up, so it works
+ *  no matter how AvatarRig sizes itself internally. Bottom-anchored and centred. */
+const AvatarLayer: React.FC = () => (
+  <div style={{ position: "absolute", left: L.avLeft, top: L.avTop, width: AVATAR_W, height: L.avH }}>
+    <div style={{ width: AVATAR_SRC.w, height: AVATAR_SRC.h, transform: `scale(${AVATAR_W / AVATAR_SRC.w})`, transformOrigin: "0 0" }}>
+      <AvatarRig timeline={TIMELINE} />
+    </div>
+  </div>
 );
 
-/* ───────────────────────── composition ───────────────────────── */
 export const Reel: React.FC = () => (
   <>
     <AbsoluteFill style={{ fontFamily: SANS, background: C.bg }}>
@@ -751,23 +786,12 @@ export const Reel: React.FC = () => (
           <SceneFor beat={b} />
         </Sequence>
       ))}
-      {/* avatar: bottom-center, y 66–98% of frame; hero zone ends at 62% so cards never cover the head */}
-      <div style={{ position: "absolute", left: 340, top: 1280, width: 400, height: 600 }}>
-        <AvatarRig timeline={TIMELINE} />
-      </div>
+      <AvatarLayer />
       <Wordmark />
+      {/* debug guide: set DEBUG_SAFE = false in shared/safe-area.tsx before the final render */}
+      <SafeGuide />
     </AbsoluteFill>
-    <CanvasImage
-      src={staticFile("instagram-reels-safe-zone.png")}
-      from={51}
-      style={{ position: "absolute" }}
-    />
-    <CanvasImage
-      src={staticFile("instagram-reels-safe-zone.png")}
-      style={{ position: "absolute", width: 1080, height: 1920 }}
-    />
   </>
 );
 
 export default Reel;
-

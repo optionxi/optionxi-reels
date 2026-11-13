@@ -12,25 +12,16 @@ import { loadFont as loadGrotesk } from "@remotion/google-fonts/SpaceGrotesk";
 import { loadFont as loadInter } from "@remotion/google-fonts/Inter";
 import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
 import { AvatarRig, PoseKey, PoseName } from "../Avatar/avatar-rig-ch2";
-
-/**
- * OptionXi — "How OptionXi works" reel. 1080x1920, 30fps, 900 frames (30s).
- * Usage: <Composition id="OptionXiReel" component={Reel} durationInFrames={900} fps={30} width={1080} height={1920} />
- * Deterministic: only useCurrentFrame / spring / interpolate. Seeded hash instead of random.
- * Needs: npm i @remotion/google-fonts
- * All data shown on screen (prices, repo names) is sample/placeholder.
- */
-
-export const REEL_DURATION = 600;
+import { getSafe, SafeGuide } from "../shared/safe-area";
 
 export const config = {
-  durationInFrames: REEL_DURATION,
+  durationInFrames: 900,
   fps: 30,
   width: 1080,
   height: 1920,
 };
+const SAFE = getSafe(config);
 
-/* ───────────────────────── theme ───────────────────────── */
 const C = {
   bg_base: "#F5F8FE",
   bg_blob_top_left: "#CFE0FF",
@@ -53,7 +44,6 @@ const GROT = loadGrotesk("normal", { weights: ["700"], subsets: ["latin"] }).fon
 const INTER = loadInter("normal", { weights: ["400", "500", "600"], subsets: ["latin"] }).fontFamily;
 const MONO = loadMono("normal", { weights: ["400", "500"], subsets: ["latin"] }).fontFamily;
 
-/* ───────────────────────── script (beats) ───────────────────────── */
 type Word = { text: string; frame: number; accent?: boolean };
 type Beat = {
   startFrame: number;
@@ -64,7 +54,6 @@ type Beat = {
   hero: string;
 };
 
-// "~word" marks an accent word. 3.5 words/sec, first word 6 frames after the beat starts.
 const beat = (
   startFrame: number,
   endFrame: number,
@@ -111,7 +100,6 @@ const TIMELINE: PoseKey[] = BEATS.flatMap((b): PoseKey[] =>
     : [{ frame: b.startFrame, pose: b.pose }]
 );
 
-/* ───────────────────────── helpers ───────────────────────── */
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const ramp = (f: number, a: number, b: number) =>
   interpolate(f, [a, b], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
@@ -161,8 +149,7 @@ const cardStyle: React.CSSProperties = {
   border: `1px solid ${C.card_border}`,
 };
 
-/* ───────────────────────── primitives ───────────────────────── */
-const HERO = { left: 65, top: 422, width: 950, height: 768 };
+const HERO = { left: SAFE.left + 5, top: SAFE.y0 + 172, width: 950, height: 768 };
 
 const Stage: React.FC<{ noOut?: boolean; children?: React.ReactNode }> = ({ noOut, children }) => {
   const frame = useCurrentFrame();
@@ -429,7 +416,6 @@ const Flow: React.FC<{ x1: number; y1: number; x2: number; y2: number; frame: nu
   </>
 );
 
-/* ───────────────────────── persistent layer ───────────────────────── */
 const Background: React.FC = () => {
   const frame = useCurrentFrame();
   const d = Math.sin((frame / 30) * ((2 * Math.PI) / 10)) * 20;
@@ -449,10 +435,10 @@ const Headline: React.FC = () => {
   const out = interpolate(frame, [b.endFrame - 4, b.endFrame], [1, 0], clamp);
   return (
     <>
-      <div style={{ position: "absolute", left: 54, top: 163, fontFamily: MONO, fontSize: 26, color: C.muted_text, opacity: out * ramp(frame, b.startFrame, b.startFrame + 6) }}>
+      <div style={{ position: "absolute", left: SAFE.left - 6, top: SAFE.y0 - 87, fontFamily: MONO, fontSize: 26, color: C.muted_text, opacity: out * ramp(frame, b.startFrame, b.startFrame + 6) }}>
         {b.eyebrow}
       </div>
-      <div style={{ position: "absolute", left: 54, top: 202, width: 972, fontFamily: GROT, fontWeight: 700, fontSize: 84, lineHeight: 1.05, letterSpacing: "-0.02em", color: C.ink, opacity: out }}>
+      <div style={{ position: "absolute", left: SAFE.left - 6, top: SAFE.y0 - 48, width: 972, fontFamily: GROT, fontWeight: 700, fontSize: 84, lineHeight: 1.05, letterSpacing: "-0.02em", color: C.ink, opacity: out }}>
         {b.words.map((w, i) => {
           const t = ramp(frame, w.frame, w.frame + 6);
           return (
@@ -466,7 +452,6 @@ const Headline: React.FC = () => {
   );
 };
 
-/* ───────────────────────── scene 1 · hook ───────────────────────── */
 const FONT: Record<string, string[]> = {
   O: ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
   P: ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
@@ -548,7 +533,6 @@ const HookScene: React.FC = () => {
   );
 };
 
-/* ───────────────────────── scene 2 · pipeline (steps 1–3) ───────────────────────── */
 const CL = series(16, 3, 200, 5, 30);
 const OP = CL.map((v, i) => (i ? CL[i - 1] : v - 4));
 const HI = CL.map((v, i) => Math.max(v, OP[i]) + 4 + hash(i * 3.1) * 10);
@@ -600,7 +584,6 @@ const PipelineScene: React.FC = () => {
         <StepPill text={pill} s={pop(st === 0 ? 8 : st)} />
       </div>
       <Panel t={90} h={640} style={{ opacity: cardO }}>
-        {/* view 1 · live data */}
         <V o={win(frame, -6, 92)}>
           <SrcChip label="Fyers API" sub="live market feed" s={pop(16)} top={120} />
           <SrcChip label="Upstox API" sub="live market feed" s={pop(22)} top={340} />
@@ -619,7 +602,6 @@ const PipelineScene: React.FC = () => {
           <Cursor frame={frame} pts={[{ f: 30, x: 760, y: 580 }, { f: 60, x: 790, y: 380 }]} clicks={[62]} />
         </V>
 
-        {/* view 2 · process */}
         <V o={win(frame, 88, 184)}>
           <svg width={820} height={340} style={abs(40, 20)}>
             {CL.map((v, i) => {
@@ -646,7 +628,6 @@ const PipelineScene: React.FC = () => {
           ))}
         </V>
 
-        {/* view 3 · store */}
         <V o={win(frame, 180, 270)}>
           <div style={{ ...abs(40, 240, 200, 110), background: C.dark_card_bg, borderRadius: 24, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: GROT, fontWeight: 700, fontSize: 42, color: C.dark_card_text, opacity: Math.min(1, pop(184)) }}>Python</div>
           <svg width={900} height={640} style={{ position: "absolute", inset: 0 }}>
@@ -686,7 +667,6 @@ const PipelineScene: React.FC = () => {
   );
 };
 
-/* ───────────────────────── scene 3 · devices + open source ───────────────────────── */
 const WATCH = [
   ["RELIANCE", "2,948", "+1.2%"],
   ["TCS", "3,812", "+0.6%"],
@@ -704,7 +684,6 @@ const DevicesScene: React.FC = () => {
   const starred = frame >= 138;
   return (
     <Stage>
-      {/* A · front ends */}
       <V o={win(frame, -6, 96)}>
         <div style={{ position: "absolute", left: 0, right: 0, top: 0, display: "flex", justifyContent: "center" }}>
           <StepPill text="Step 4 · Front end" s={pop(8)} />
@@ -756,7 +735,6 @@ const DevicesScene: React.FC = () => {
         <div style={{ ...abs(400, 648, 520), textAlign: "center", fontFamily: INTER, fontWeight: 600, fontSize: 26, color: C.ink, opacity: ramp(frame, 36, 46) }}>Next.js · Web</div>
       </V>
 
-      {/* B · open source */}
       <V o={win(frame, 90, 175)}>
         <Panel t={70} h={560}>
           <div style={{ ...abs(36, 34), display: "flex", alignItems: "center", gap: 16 }}>
@@ -789,7 +767,6 @@ const DevicesScene: React.FC = () => {
   );
 };
 
-/* ───────────────────────── scene 4 · custom algo ───────────────────────── */
 const AlgoScene: React.FC = () => {
   const { frame, pop } = useF();
   const code = "entry = ema20 > sma50\nexit  = stop 1.5%\nrun   = on our cloud";
@@ -817,7 +794,6 @@ const AlgoScene: React.FC = () => {
   );
 };
 
-/* ───────────────────────── scene 5 · alerts + mood ───────────────────────── */
 const arc = (cx: number, cy: number, r: number, a0: number, a1: number) => {
   const p = (a: number) => [cx + r * Math.cos((a * Math.PI) / 180), cy + r * Math.sin((a * Math.PI) / 180)];
   const [x0, y0] = p(a0);
@@ -869,7 +845,6 @@ const AlertsScene: React.FC = () => {
   );
 };
 
-/* ───────────────────────── scene 6 · screeners + scanners ───────────────────────── */
 const MATCHES = ["RELIANCE", "TCS", "INFY", "SBIN"];
 
 const ScreenersScene: React.FC = () => {
@@ -914,7 +889,6 @@ const ScreenersScene: React.FC = () => {
   );
 };
 
-/* ───────────────────────── scene 7 · AI analytics ───────────────────────── */
 const AIScene: React.FC = () => {
   const { frame, pop } = useF();
   const path = toPath(series(24, 77, 100, 2.4, 16), 828, 170, 10);
@@ -960,7 +934,6 @@ const AIScene: React.FC = () => {
   );
 };
 
-/* ───────────────────────── scene 8 · outro ───────────────────────── */
 const OutroScene: React.FC = () => {
   const { pop } = useF();
   const s = pop(6);
@@ -986,7 +959,6 @@ const OutroScene: React.FC = () => {
   );
 };
 
-/* ───────────────────────── composition ───────────────────────── */
 const SCENES: { from: number; to: number; El: React.FC }[] = [
   { from: 0, to: 75, El: HookScene },
   { from: 75, to: 330, El: PipelineScene },
@@ -1014,15 +986,14 @@ export const Reel: React.FC = () => {
 
       <Headline />
 
-      {/* avatar: y 66%–98%, bottom-center */}
-      <div style={{ position: "absolute", left: (1080 - 397) / 2, top: 1267, width: 397, height: 595 }}>
+      <div style={{ position: "absolute", left: (config.width - 397) / 2, top: 1267, width: 397, height: 595 }}>
         <AvatarRig timeline={TIMELINE} />
       </div>
 
-      {/* wordmark beside avatar; replaced by the big one in the outro */}
-      <div style={{ position: "absolute", right: 54, top: 1340, opacity: 1 - ramp(frame, 806, 816) }}>
+      <div style={{ position: "absolute", right: SAFE.left, top: SAFE.y1 - 138, opacity: 1 - ramp(frame, 806, 816) }}>
         <Wordmark size={46} />
       </div>
+      <SafeGuide />
     </AbsoluteFill>
   );
 };

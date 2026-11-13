@@ -12,13 +12,15 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion';
+import {getSafe, SafeArea as Safe, SafeGuide} from "../shared/safe-area";
 
-/* ------------------------------------------------------------------ */
-/* Root.tsx: width 1080, height 1920, fps 30, durationInFrames 900     */
-/* Pure Remotion (spring/interpolate). No GSAP, no hand PNGs.          */
-/* Instagram safe zone: x 60-960, y 250-1540 -> <Safe> is 900x1290     */
-/* ------------------------------------------------------------------ */
-const FPS = 30;
+export const config = {
+  durationInFrames: 900,
+  fps: 30,
+  width: 1080,
+  height: 1920,
+};
+const SAFE = getSafe(config);
 
 const fontFamily =
   '"Poppins","Inter","SF Pro Display",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
@@ -88,12 +90,12 @@ const prog = (f: number, a: number, b: number, easing: (t: number) => number = O
 const pop = (f: number, at: number, cfg: Record<string, number> = {}) =>
   spring({
     frame: Math.max(0, f - at),
-    fps: FPS,
+    fps: config.fps,
     config: {damping: 14, stiffness: 140, mass: 0.8, ...cfg},
   });
 
 const soft = (f: number, at: number) =>
-  spring({frame: Math.max(0, f - at), fps: FPS, config: {damping: 200}});
+  spring({frame: Math.max(0, f - at), fps: config.fps, config: {damping: 200}});
 
 /* exit progress over the last n frames of the current Sequence */
 const useOut = (n = 8) => {
@@ -114,10 +116,6 @@ const glass: React.CSSProperties = {
 /* ------------------------------------------------------------------ */
 /* Layout primitives                                                   */
 /* ------------------------------------------------------------------ */
-const Safe: React.FC<{children?: React.ReactNode}> = ({children}) => (
-  <div style={{position: 'absolute', left: 60, top: 250, width: 900, height: 1290}}>{children}</div>
-);
-
 /* masked slide-up text reveal */
 const Rise: React.FC<{at: number; children: React.ReactNode; style?: React.CSSProperties}> = ({
   at,
@@ -139,7 +137,7 @@ const Title: React.FC<{n: string; text: string}> = ({n, text}) => {
   return (
     <div
       style={{
-        position: 'absolute', top: 0, left: 0, width: 900, textAlign: 'center',
+        position: 'absolute', top: 0, left: 0, width: SAFE.w, textAlign: 'center',
         fontSize: 92, fontWeight: 900, letterSpacing: -2, lineHeight: 1.12, opacity: 1 - out,
       }}
     >
@@ -167,7 +165,7 @@ const Cap: React.FC<{from: number; to?: number; mono?: boolean; children: string
   return (
     <div
       style={{
-        position: 'absolute', top: 150, left: 0, width: 900, display: 'flex', justifyContent: 'center',
+        position: 'absolute', top: 150, left: 0, width: SAFE.w, display: 'flex', justifyContent: 'center',
         transform: `translateY(${(1 - p) * 30 - q * 20}px) scale(${0.94 + 0.06 * p})`, opacity: p * (1 - q),
       }}
     >
@@ -198,7 +196,6 @@ const Background: React.FC = () => {
   const blur = prog(frame, 40, 90);
   return (
     <AbsoluteFill style={{background: C.bg}} hidden>
-      {/* drifting orbs */}
       <div
         style={{
           ...fill,
@@ -206,7 +203,6 @@ const Background: React.FC = () => {
                        radial-gradient(820px 820px at ${82 + Math.cos(frame / 80) * 6}% ${86 + Math.sin(frame / 60) * 4}%, ${C.accent2}26, transparent 62%)`,
         }}
       />
-      {/* scrolling grid */}
       <div
         style={{
           ...fill, opacity: 0.35,
@@ -216,7 +212,6 @@ const Background: React.FC = () => {
           maskImage: 'radial-gradient(ellipse at 50% 45%, #000 20%, transparent 75%)',
         }}
       />
-      {/* candles */}
       <div
         style={{
           position: 'absolute', left: 20, bottom: 100, width: 1040, height: 1000,
@@ -236,14 +231,13 @@ const Background: React.FC = () => {
           </div>
         ))}
       </div>
-      {/* vignette */}
       <div style={{...fill, background: 'radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.5))'}} />
     </AbsoluteFill>
   );
 };
 
 const Brand: React.FC = () => (
-  <div style={{position: 'absolute', left: 60, top: 1496, width: 900, textAlign: 'center', fontSize: 22, fontWeight: 500, color: C.mute, opacity: 0.8}}>
+  <div style={{position: 'absolute', left: SAFE.left, top: SAFE.y1 - 44, width: SAFE.w, textAlign: 'center', fontSize: 22, fontWeight: 500, color: C.mute, opacity: 0.8}}>
     Educational only. Not investment advice.
   </div>
 );
@@ -421,7 +415,6 @@ const AiView: React.FC = () => (
               </div>
             );
           })}
-          {/* scan beam */}
           <div
             style={{
               position: 'absolute', left: 0, right: 0, height: 90,
@@ -590,14 +583,12 @@ const TabTaps: React.FC = () => {
 /* 3D device mockup */
 const Device: React.FC<{rotY: number; children: React.ReactNode}> = ({rotY, children}) => (
   <div style={{position: 'relative', width: PH.w, height: PH.h}}>
-    {/* ground shadow */}
     <div
       style={{
         position: 'absolute', left: 30, bottom: -60, width: PH.w - 60, height: 60, borderRadius: '50%',
         background: 'rgba(0,0,0,0.55)', filter: 'blur(32px)',
       }}
     />
-    {/* side buttons */}
     <div style={{position: 'absolute', left: -4, top: 170, width: 5, height: 60, borderRadius: 3, background: '#2B3170'}} />
     <div style={{position: 'absolute', left: -4, top: 250, width: 5, height: 90, borderRadius: 3, background: '#2B3170'}} />
     <div style={{position: 'absolute', right: -4, top: 220, width: 5, height: 120, borderRadius: 3, background: '#2B3170'}} />
@@ -611,7 +602,6 @@ const Device: React.FC<{rotY: number; children: React.ReactNode}> = ({rotY, chil
       <div style={{position: 'relative', width: '100%', height: '100%', borderRadius: 56, overflow: 'hidden', background: C.screen}}>
         {children}
         <div style={{position: 'absolute', top: 12, left: '50%', marginLeft: -50, width: 100, height: 28, borderRadius: 14, background: '#000', zIndex: 30}} />
-        {/* glass glare */}
         <div
           style={{
             ...fill, zIndex: 31, pointerEvents: 'none',
@@ -627,7 +617,7 @@ const Device: React.FC<{rotY: number; children: React.ReactNode}> = ({rotY, chil
 const PhoneLayer: React.FC = () => {
   const frame = useCurrentFrame();
   if (frame < 75 || frame >= 750) return null;
-  const enter = spring({frame: frame - 75, fps: FPS, config: {damping: 16, stiffness: 70, mass: 1}});
+  const enter = spring({frame: frame - 75, fps: config.fps, config: {damping: 16, stiffness: 70, mass: 1}});
   const exit = prog(frame, 722, 750, Easing.in(Easing.cubic));
   const ease = Easing.inOut(Easing.cubic);
   const rotY = interpolate(frame, [75, 150, 200, 345, 430, 525, 610, 720], [-28, -10, 0, 0, 9, 9, -7, -7], {...clamp, easing: ease});
@@ -654,7 +644,6 @@ const PhoneLayer: React.FC = () => {
   );
 };
 
-/* floating glass chips around the phone (parallax bob) */
 const FloatChip: React.FC<{
   from: number; to: number; x: number; y: number; phase?: number; mono?: boolean; children: React.ReactNode;
 }> = ({from, to, x, y, phase = 0, mono, children}) => {
@@ -701,7 +690,6 @@ const Hook: React.FC = () => {
   const sub = Math.min(pop(frame, 40, {damping: 18}), 1);
   return (
     <Safe>
-      {/* chaos of tickers = "too many" */}
       {NAMES.map((n, i) => {
         const p = Math.min(pop(frame, 4 + i * 3, {damping: 12}), 1);
         const up = random(`n${i}`) > 0.45;
@@ -718,7 +706,7 @@ const Hook: React.FC = () => {
           </div>
         );
       })}
-      <div style={{position: 'absolute', top: 380, width: 900, textAlign: 'center', opacity: 1 - out, transform: `scale(${1 + out * 0.08})`}}>
+      <div style={{position: 'absolute', top: 380, width: SAFE.w, textAlign: 'center', opacity: 1 - out, transform: `scale(${1 + out * 0.08})`}}>
         <div style={{fontSize: 140, fontWeight: 900, lineHeight: 1.02, letterSpacing: -4}}>
           <Rise at={0}>Too many</Rise>
           <br />
@@ -743,14 +731,14 @@ const RevealScene: React.FC = () => {
   return (
     <Safe>
       <div style={{opacity: 1 - out}}>
-        <div style={{position: 'absolute', left: 380, top: 0, width: 140, height: 140, transform: `scale(${lp}) rotate(${(1 - lp) * -30}deg)`, filter: `drop-shadow(0 0 40px ${C.accent}88)`}}>
+        <div style={{position: 'absolute', left: (SAFE.w - 140) / 2, top: 0, width: 140, height: 140, transform: `scale(${lp}) rotate(${(1 - lp) * -30}deg)`, filter: `drop-shadow(0 0 40px ${C.accent}88)`}}>
           <Img src={LOGO} style={{width: '100%', height: '100%', objectFit: 'contain', borderRadius: 32}} />
         </div>
-        <div style={{position: 'absolute', top: 156, width: 900, textAlign: 'center', fontSize: 78, fontWeight: 900, letterSpacing: -1}}>
+        <div style={{position: 'absolute', top: 156, width: SAFE.w, textAlign: 'center', fontSize: 78, fontWeight: 900, letterSpacing: -1}}>
           <Rise at={10} style={{marginRight: 18}}>OptionXi</Rise>
           <Rise at={14}>Screeners</Rise>
         </div>
-        <div style={{position: 'absolute', top: 256, width: 900, textAlign: 'center', fontSize: 42, fontWeight: 700, color: C.accent, opacity: sp, transform: `translateY(${(1 - sp) * 24}px)`}}>
+        <div style={{position: 'absolute', top: 256, width: SAFE.w, textAlign: 'center', fontSize: 42, fontWeight: 700, color: C.accent, opacity: sp, transform: `translateY(${(1 - sp) * 24}px)`}}>
           Find stocks. Fast.
         </div>
       </div>
@@ -798,22 +786,15 @@ const CONF = Array.from({length: 40}, (_, i) => ({
 
 const ProofScene: React.FC = () => {
   const frame = useCurrentFrame();
-  
-  // 2 seconds at 30fps = 60 frames
-  const DELAY = 20; 
-  
-  // Ensure things only start animating after the delay
-  const f = Math.max(0, frame - DELAY); 
-
+  const DELAY = 20;
+  const f = Math.max(0, frame - DELAY);
   const rp = Math.min(pop(frame, 14), 1);
-  
-  // These now use 'f', so they smoothly animate starting exactly at frame 60
   const bp = Math.min(pop(f, 0, {damping: 12}), 1.1);
   const ip = Math.min(pop(f, 0), 1);
 
   return (
     <Safe>
-      <div style={{position: 'absolute', top: 120, left: 0, width: 900, display: 'flex', justifyContent: 'center', gap: 14}}>
+      <div style={{position: 'absolute', top: 120, left: 0, width: SAFE.w, display: 'flex', justifyContent: 'center', gap: 14}}>
         {[0, 1, 2, 3, 4].map((i) => {
           const sp = Math.min(pop(frame, 6 + i * 4, {damping: 9}), 1.2);
           return (
@@ -827,27 +808,25 @@ const ProofScene: React.FC = () => {
         })}
       </div>
 
-      <div style={{position: 'absolute', top: 260, width: 900, textAlign: 'center', fontSize: 104, fontWeight: 900, letterSpacing: -2, transform: `translateY(${(1 - rp) * 40}px)`, opacity: rp}}>
+      <div style={{position: 'absolute', top: 260, width: SAFE.w, textAlign: 'center', fontSize: 104, fontWeight: 900, letterSpacing: -2, transform: `translateY(${(1 - rp) * 40}px)`, opacity: rp}}>
         4.2 Rating
       </div>
 
-      {/* The wrapper hides it completely for 2s, then fades it in */}
       <div style={{ opacity: frame >= DELAY ? 1 : 0 }}>
         <div
           style={{
-            position: 'absolute', top: 430, width: 900, textAlign: 'center', fontSize: 240, fontWeight: 900, letterSpacing: -6, lineHeight: 1,
+            position: 'absolute', top: 430, width: SAFE.w, textAlign: 'center', fontSize: 240, fontWeight: 900, letterSpacing: -6, lineHeight: 1,
             background: `linear-gradient(135deg, ${C.accent}, ${C.accent2})`, WebkitBackgroundClip: 'text', color: 'transparent',
           }}
         >
-          {/* Uses 'f' so it animates from 0 to 100 over 32 frames starting at the 2s mark */}
           {Math.round(10 * prog(f, 0, 35, Easing.out(Easing.cubic)))}K+
         </div>
 
-        <div style={{position: 'absolute', top: 700, width: 900, textAlign: 'center', fontSize: 62, fontWeight: 800, transform: `translateY(${(1 - ip) * 40}px)`, opacity: ip}}>
+        <div style={{position: 'absolute', top: 700, width: SAFE.w, textAlign: 'center', fontSize: 62, fontWeight: 800, transform: `translateY(${(1 - ip) * 40}px)`, opacity: ip}}>
           Installs
         </div>
 
-        <div style={{position: 'absolute', top: 860, left: 190, width: 520, transform: `scale(${bp})`, opacity: Math.min(bp, 1)}}>
+        <div style={{position: 'absolute', top: 860, left: (SAFE.w - 520) / 2, width: 520, transform: `scale(${bp})`, opacity: Math.min(bp, 1)}}>
           <Img src={PLAY} style={{width: '100%', display: 'block'}} />
         </div>
       </div>
@@ -876,22 +855,22 @@ const Cta: React.FC = () => {
   const bio = prog(frame, 20, 30);
   return (
     <Safe>
-      <div style={{position: 'absolute', left: 350, top: 110, width: 200, height: 200, transform: `scale(${lp})`, filter: `drop-shadow(0 0 50px ${C.accent}99)`}}>
+      <div style={{position: 'absolute', left: (SAFE.w - 200) / 2, top: 110, width: 200, height: 200, transform: `scale(${lp})`, filter: `drop-shadow(0 0 50px ${C.accent}99)`}}>
         <Img src={LOGO} style={{width: '100%', height: '100%', objectFit: 'contain', borderRadius: 44}} />
       </div>
-      <div style={{position: 'absolute', top: 350, width: 900, textAlign: 'center', fontSize: 140, fontWeight: 900, letterSpacing: -3}}>
+      <div style={{position: 'absolute', top: 350, width: SAFE.w, textAlign: 'center', fontSize: 140, fontWeight: 900, letterSpacing: -3}}>
         <Rise at={6}>Try</Rise> <Rise at={9}>it</Rise> <Rise at={12}>free.</Rise>
       </div>
-      <div style={{position: 'absolute', top: 530, width: 900, textAlign: 'center', fontSize: 52, fontWeight: 700, color: C.accent, transform: `translateY(${(1 - sub) * 40}px)`, opacity: sub}}>
+      <div style={{position: 'absolute', top: 530, width: SAFE.w, textAlign: 'center', fontSize: 52, fontWeight: 700, color: C.accent, transform: `translateY(${(1 - sub) * 40}px)`, opacity: sub}}>
         Free on Play Store
       </div>
-      <div style={{position: 'absolute', top: 620, left: 190, width: 520, transform: `scale(${Math.min(pop(frame, 14, {damping: 12}), 1.1) * pulse})`, opacity: Math.min(pop(frame, 14), 1)}}>
+      <div style={{position: 'absolute', top: 620, left: (SAFE.w - 520) / 2, width: 520, transform: `scale(${Math.min(pop(frame, 14, {damping: 12}), 1.1) * pulse})`, opacity: Math.min(pop(frame, 14), 1)}}>
         <Img src={PLAY} style={{width: '100%', display: 'block'}} />
       </div>
-      <div style={{position: 'absolute', top: 850, width: 900, textAlign: 'center', fontSize: 50, fontWeight: 800, opacity: bio}}>
+      <div style={{position: 'absolute', top: 850, width: SAFE.w, textAlign: 'center', fontSize: 50, fontWeight: 800, opacity: bio}}>
         OptionXi — link in caption
       </div>
-      <div style={{position: 'absolute', top: 930, width: 900, textAlign: 'center', fontSize: 110, fontWeight: 900, color: C.accent, lineHeight: 1, opacity: bio, transform: `translateY(${Math.sin(frame / 4) * -14}px)`}}>
+      <div style={{position: 'absolute', top: 930, width: SAFE.w, textAlign: 'center', fontSize: 110, fontWeight: 900, color: C.accent, lineHeight: 1, opacity: bio, transform: `translateY(${Math.sin(frame / 4) * -14}px)`}}>
         ↑
       </div>
     </Safe>
@@ -912,7 +891,6 @@ export const Reel: React.FC = () => (
     style={{fontFamily, background: C.bg, color: C.white, overflow: 'hidden'}}
   >
     <Background />
-    {/* persistent device + floating chips live on the global timeline */}
     <Safe>
       <PhoneLayer />
       <FloatChips />
@@ -930,5 +908,8 @@ export const Reel: React.FC = () => (
         <Audio src={staticFile(s.src)} />
       </Sequence>
     ))}
+    <SafeGuide />
   </AbsoluteFill>
 );
+
+export default Reel;

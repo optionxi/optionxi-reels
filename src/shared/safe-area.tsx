@@ -1,7 +1,7 @@
 import React from "react";
 import {AbsoluteFill, useVideoConfig} from "remotion";
 
-export const DEBUG_SAFE = false;
+export const DEBUG_SAFE = true;
 export const SAFE_PORTRAIT  = {top: 250, bottom: 340, side: 60};
 export const SAFE_LANDSCAPE = {top: 54,  bottom: 54,  side: 96};
 

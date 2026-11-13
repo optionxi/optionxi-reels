@@ -2,13 +2,7 @@
  * OptionXi — "Learn the market before you risk a rupee."
  * Instagram Reel · 1080×1920 · 30 fps · 900 frames (30 s) · single file, zero extra deps
  *
- *   import { Reel } from "./Reel-Intro";
- *   <Composition id="OptionXiReel" component={Reel} durationInFrames={900} fps={30} width={1080} height={1920} />
- *
- * Scenes (frames):  Hook 0–120 · Brand 120–240 · Practice trade 240–450
- *                   Screener 450–600 · Alerts 600–720 · CTA 720–900
- *
- * Instagram safe space: top 270px, bottom 430px, sides 100px. Set SHOW_SAFE_GUIDES = true to see it.
+ * Instagram safe space from shared/safe-area.tsx. Set DEBUG_SAFE = true there to see it.
  */
 import React, {useEffect, useState} from "react";
 import {
@@ -24,17 +18,19 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import {getSafe, SafeGuide} from "../shared/safe-area";
 
-
-const SHOW_SAFE_GUIDES = false;
+export const config = {
+  durationInFrames: 900,
+  fps: 30,
+  width: 1080,
+  height: 1920,
+};
+const SAFE = getSafe(config);
 
 /* ------------------------------------------------------------------ */
 /*  Tokens                                                             */
 /* ------------------------------------------------------------------ */
-const W = 1080;
-const H = 1920;
-const SAFE = {top: 270, bottom: 430, x: 100};
-
 const C = {
   cobalt: "#2A3BFF",
   ink: "#0B1020",
@@ -54,7 +50,7 @@ const UI = '"Figtree", "Noto Sans", system-ui, sans-serif';
 const LOGO = "https://optionxi.com/assets/images/logo_xi.png";
 const BADGE = "https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png";
 
-const R = 18; // frames of overlap for the circle-wipe between scenes
+const R = 18;
 
 /* ------------------------------------------------------------------ */
 /*  Motion helpers                                                     */
@@ -63,7 +59,6 @@ const clampX = {extrapolateLeft: "clamp", extrapolateRight: "clamp"} as const;
 const OUT = Easing.bezier(0.16, 1, 0.3, 1);
 const INOUT = Easing.bezier(0.7, 0, 0.2, 1);
 
-/** 0→1 progress between frames a and b */
 const p = (f: number, a: number, b: number, easing: (t: number) => number = OUT) =>
   interpolate(f, [a, b], [0, 1], {...clampX, easing});
 
@@ -118,7 +113,7 @@ const Band: React.FC<{top: number; children: React.ReactNode}> = ({top, children
       position: "absolute",
       top,
       left: 0,
-      width: W,
+      width: config.width,
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -266,7 +261,7 @@ const LineChart: React.FC<{
 const PW = 390;
 const PH = 820;
 const BZ = 14;
-const PHONE_LEFT = (W - (PW + BZ * 2)) / 2;
+const PHONE_LEFT = (config.width - (PW + BZ * 2)) / 2;
 const PHONE_TOP = 580;
 
 const StatusBar: React.FC = () => (
@@ -386,15 +381,14 @@ const Hook: React.FC = () => {
   const planeOpacity = 1 - p(f, 54, 62);
 
   const coin = spring({frame: f - 62, fps, config: {damping: 9, stiffness: 90, mass: 1}});
-  const coinY = -Math.abs(1 - coin) * 1500; // starts fully above the frame
+  const coinY = -Math.abs(1 - coin) * 1500;
   const coinVisible = f >= 62;
   const spin = (1 - p(f, 62, 104, Easing.out(Easing.cubic))) * Math.PI * 5;
   const ringP = p(f, 70, 110);
 
   return (
     <>
-      {/* dotted flight path */}
-      <svg width={W} height={H} style={{position: "absolute", inset: 0, opacity: planeOpacity * 0.35}}>
+      <svg width={config.width} height={config.height} style={{position: "absolute", inset: 0, opacity: planeOpacity * 0.35}}>
         <path
           d={`M${P0[0]} ${P0[1]} Q${P1[0]} ${P1[1]} ${P2[0]} ${P2[1]}`}
           fill="none"
@@ -405,7 +399,6 @@ const Hook: React.FC = () => {
         />
       </svg>
 
-      {/* paper plane */}
       <svg
         width={96}
         height={96}
@@ -421,9 +414,8 @@ const Hook: React.FC = () => {
         <path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z" fill={C.paper} />
       </svg>
 
-      {/* headline */}
-      <Band top={SAFE.top}>
-        <div style={{position: "relative", width: W, height: 360}}>
+      <Band top={SAFE.y0}>
+        <div style={{position: "relative", width: config.width, height: 360}}>
           <Stack>
             <Rise lines={["Would you fly", "a plane with", "zero practice?"]} at={6} out={50} size={104} color={C.paper} />
           </Stack>
@@ -438,11 +430,10 @@ const Hook: React.FC = () => {
         </div>
       </Band>
 
-      {/* coin lands, spins, settles */}
       <div
         style={{
           position: "absolute",
-          left: 540 - 130,
+          left: config.width / 2 - 130,
           top: 1180 - 130,
           width: 260,
           height: 260,
@@ -471,7 +462,7 @@ const Hook: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          left: 540 - 130,
+          left: config.width / 2 - 130,
           top: 1180 - 130,
           width: 260,
           height: 260,
@@ -506,7 +497,7 @@ const Brand: React.FC = () => {
             key={i}
             style={{
               position: "absolute",
-              left: 540 - 110,
+              left: config.width / 2 - 110,
               top: 390 - 110,
               width: 220,
               height: 220,
@@ -1010,8 +1001,8 @@ const Practice: React.FC = () => {
         }}
       />
 
-      <Band top={SAFE.top}>
-        <div style={{position: "relative", width: W, height: 290}}>
+      <Band top={SAFE.y0}>
+        <div style={{position: "relative", width: config.width, height: 290}}>
           <Stack>
             <Rise lines={["Get ₹3,00,000", "of pretend money."]} at={14} out={70} size={80} color={C.paper} />
           </Stack>
@@ -1074,7 +1065,7 @@ const Practice: React.FC = () => {
 const COLS = 18;
 const ROWS = 17;
 const PITCH = 44;
-const GX = (W - (COLS - 1) * PITCH) / 2;
+const GX = (config.width - (COLS - 1) * PITCH) / 2;
 const GY = 730;
 const KILL = [32, 62, 92];
 const SURV = new Set([94, 174, 241]);
@@ -1110,7 +1101,7 @@ const Funnel: React.FC = () => {
 
   return (
     <>
-      <Band top={SAFE.top - 10}>
+      <Band top={SAFE.y0 - 10}>
         <div
           style={{
             fontFamily: DISPLAY,
@@ -1127,7 +1118,7 @@ const Funnel: React.FC = () => {
         </div>
       </Band>
 
-      <div style={{position: "absolute", top: 515, left: 0, width: W, height: 70}}>
+      <div style={{position: "absolute", top: 515, left: 0, width: config.width, height: 70}}>
         {FILTERS.map((l, i) => {
           const next = i < FILTERS.length - 1 ? FILTERS[i + 1].t : 99999;
           const a = p(f, l.t + (i ? 6 : 8), l.t + (i ? 18 : 20));
@@ -1138,7 +1129,7 @@ const Funnel: React.FC = () => {
               style={{
                 position: "absolute",
                 left: 0,
-                width: W,
+                width: config.width,
                 textAlign: "center",
                 fontFamily: UI,
                 fontWeight: i === FILTERS.length - 1 ? 800 : 700,
@@ -1216,7 +1207,7 @@ const ALERT_DATA = [
 const LEVEL = 0.68;
 const DRAW_A = 16;
 const DRAW_B = 70;
-const CROSS_F = DRAW_A + (16.571 / 19) * (DRAW_B - DRAW_A); // frame where the line crosses the level (~63)
+const CROSS_F = DRAW_A + (16.571 / 19) * (DRAW_B - DRAW_A);
 const CH_W = 342;
 const CH_H = 240;
 
@@ -1246,8 +1237,8 @@ const Alerts: React.FC = () => {
         }}
       />
 
-      <Band top={SAFE.top}>
-        <div style={{position: "relative", width: W, height: 230}}>
+      <Band top={SAFE.y0}>
+        <div style={{position: "relative", width: config.width, height: 230}}>
           <Stack>
             <Rise lines={["Set a price.", "Skip the staring."]} at={6} out={54} size={84} color={C.paper} />
           </Stack>
@@ -1257,7 +1248,6 @@ const Alerts: React.FC = () => {
         </div>
       </Band>
 
-      {/* vibration arcs */}
       {[0, 1].map((side) => (
         <svg
           key={side}
@@ -1420,7 +1410,6 @@ const Alerts: React.FC = () => {
               </div>
             </div>
 
-            {/* notification banner */}
             <div
               style={{
                 position: "absolute",
@@ -1486,7 +1475,7 @@ const Cta: React.FC = () => {
 
   return (
     <>
-      <Band top={SAFE.top}>
+      <Band top={SAFE.y0}>
         <div style={{transform: `scale(${logo})`}}>
           <Img src={LOGO} style={{width: 96, height: 96, borderRadius: 24, objectFit: "contain", display: "block"}} />
         </div>
@@ -1497,9 +1486,8 @@ const Cta: React.FC = () => {
         <Rise lines={["Risk later."]} at={20} size={100} color={C.cobalt} />
       </Band>
 
-      {/* proof */}
       <Band top={700}>
-        <div style={{display: "flex", alignItems: "center", justifyContent: "center", width: W}}>
+        <div style={{display: "flex", alignItems: "center", justifyContent: "center", width: config.width}}>
           <div style={{width: 440, display: "flex", flexDirection: "column", alignItems: "center", gap: 12}}>
             <div style={{fontFamily: DISPLAY, fontWeight: 800, fontSize: 150, lineHeight: 1, letterSpacing: -5}}>
               {rating.toFixed(1)}
@@ -1536,7 +1524,6 @@ const Cta: React.FC = () => {
         </div>
       </Band>
 
-      {/* Play badge */}
       <Band top={1090}>
         <div style={{position: "relative", transform: `scale(${(0.6 + 0.4 * badge) * (1 - dip)})`, opacity: p(f, 96, 102)}}>
           <Img src={BADGE} style={{width: 640, height: "auto", display: "block"}} />
@@ -1584,25 +1571,6 @@ const Cta: React.FC = () => {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Safe-space overlay (debug)                                         */
-/* ------------------------------------------------------------------ */
-const SafeGuides: React.FC = () => (
-  <AbsoluteFill style={{pointerEvents: "none", zIndex: 999}}>
-    <div
-      style={{
-        position: "absolute",
-        left: SAFE.x,
-        right: SAFE.x,
-        top: SAFE.top,
-        bottom: SAFE.bottom,
-        border: "3px dashed rgba(255,0,120,.85)",
-      }}
-    />
-    <div style={{position: "absolute", right: 0, top: 1000, bottom: 330, width: 140, background: "rgba(255,0,120,.15)"}} />
-  </AbsoluteFill>
-);
-
-/* ------------------------------------------------------------------ */
 /*  Root                                                               */
 /* ------------------------------------------------------------------ */
 export const Reel: React.FC = () => {
@@ -1610,11 +1578,11 @@ export const Reel: React.FC = () => {
 
   const scenes: {name: string; from: number; dur: number; bg: string; origin?: [number, number]; el: React.ReactNode}[] = [
     {name: "Hook", from: 0, dur: 120, bg: C.cobalt, el: <Hook />},
-    {name: "Brand", from: 120, dur: 120, bg: C.paper, origin: [540, 1180], el: <Brand />},
-    {name: "Practice", from: 240, dur: 210, bg: C.ink, origin: [540, 1030], el: <Practice />},
-    {name: "Screener", from: 450, dur: 150, bg: C.sun, origin: [540, 1480], el: <Funnel />},
-    {name: "Alerts", from: 600, dur: 120, bg: C.cobalt, origin: [540, 1080], el: <Alerts />},
-    {name: "CTA", from: 720, dur: 180, bg: C.paper, origin: [540, 700], el: <Cta />},
+    {name: "Brand", from: 120, dur: 120, bg: C.paper, origin: [config.width / 2, 1180], el: <Brand />},
+    {name: "Practice", from: 240, dur: 210, bg: C.ink, origin: [config.width / 2, 1030], el: <Practice />},
+    {name: "Screener", from: 450, dur: 150, bg: C.sun, origin: [config.width / 2, 1480], el: <Funnel />},
+    {name: "Alerts", from: 600, dur: 120, bg: C.cobalt, origin: [config.width / 2, 1080], el: <Alerts />},
+    {name: "CTA", from: 720, dur: 180, bg: C.paper, origin: [config.width / 2, 700], el: <Cta />},
   ];
 
   return (
@@ -1631,7 +1599,7 @@ export const Reel: React.FC = () => {
           </Scene>
         </Sequence>
       ))}
-      {SHOW_SAFE_GUIDES && <SafeGuides />}
+      <SafeGuide />
     </AbsoluteFill>
   );
 };

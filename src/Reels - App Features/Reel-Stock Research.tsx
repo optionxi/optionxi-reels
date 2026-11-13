@@ -10,15 +10,15 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion';
+import {getSafe, SafeArea as Safe, SafeGuide} from "../shared/safe-area";
 
-/* ------------------------------------------------------------------ */
-/* OptionXi: "Stock Research" reel                                     */
-/* Root: 1080x1920, 30fps, 900 frames (30s). No assets, no deps.       */
-/* Instagram safe zone: x 60-960, y 250-1540 -> <Safe> is 900x1290     */
-/* All UI inside the phone is animated code (no screenshots).          */
-/* All prices/numbers shown are illustrative demo data.                */
-/* ------------------------------------------------------------------ */
-const FPS = 30;
+export const config = {
+  durationInFrames: 900,
+  fps: 30,
+  width: 1080,
+  height: 1920,
+};
+const SAFE = getSafe(config);
 
 const fontFamily =
   '"Poppins","Inter","SF Pro Display",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
@@ -35,7 +35,6 @@ const C = {
   line: 'rgba(246,243,236,0.14)',
 };
 
-/* colours used INSIDE the phone (light app UI) */
 const UI = {
   bg: '#FAF8F2',
   ink: '#14171F',
@@ -55,10 +54,9 @@ const LOGO = 'https://optionxi.com/assets/images/logo_xi.png';
 const PLAY =
   'https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png';
 
-/* ---------------- Timeline (global frames) ---------------- */
 const STEP_START = 135;
 const STEP_LEN = 95;
-const STEPS_END = STEP_START + STEP_LEN * 6; // 705
+const STEPS_END = STEP_START + STEP_LEN * 6;
 const T = {
   hook: [0, 75],
   reveal: [75, 135],
@@ -75,12 +73,10 @@ const STEPS = [
   {n: '6.', title: 'Journal', cap: 'Save it. Learn from it.'},
 ];
 
-/* ---------------- Phone geometry (inside Safe box) ---------------- */
 const PH = {x: 210, y: 240, w: 480, h: 980, bez: 12};
-const SW = PH.w - PH.bez * 2; // 456 screen width
-const SH = PH.h - PH.bez * 2; // 956 screen height
+const SW = PH.w - PH.bez * 2;
+const SH = PH.h - PH.bez * 2;
 
-/* ---------------- Motion helpers ---------------- */
 const OUT = Easing.bezier(0.16, 1, 0.3, 1);
 const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
 
@@ -90,7 +86,7 @@ const prog = (f: number, a: number, b: number, easing: (t: number) => number = O
 const pop = (f: number, at: number, cfg: Record<string, number> = {}) =>
   spring({
     frame: Math.max(0, f - at),
-    fps: FPS,
+    fps: config.fps,
     config: {damping: 14, stiffness: 140, mass: 0.8, ...cfg},
   });
 
@@ -132,7 +128,6 @@ const partial = (p: Pt[], t: number): Pt[] => {
   return out;
 };
 
-/* ---------------- Icons ---------------- */
 const ICONS: Record<string, string> = {
   arrow: 'M5 12h14M13 6l6 6-6 6',
   check: 'M5 12.5l4.5 4.5L19 7.5',
@@ -158,11 +153,6 @@ const Icon: React.FC<{n: string; s?: number; c?: string; w?: number}> = ({n, s =
   </svg>
 );
 
-/* ---------------- Layout primitives ---------------- */
-const Safe: React.FC<{children?: React.ReactNode}> = ({children}) => (
-  <div style={{position: 'absolute', left: 60, top: 250, width: 900, height: 1290}}>{children}</div>
-);
-
 const Rise: React.FC<{at: number; children: React.ReactNode; style?: React.CSSProperties}> = ({at, children, style}) => {
   const frame = useCurrentFrame();
   const p = pop(frame, at, {damping: 18, stiffness: 120});
@@ -181,7 +171,7 @@ const Title: React.FC<{n: string; text: string}> = ({n, text}) => {
   const out = useOut(10);
   const words = text.split(' ');
   return (
-    <div style={{position: 'absolute', top: 0, left: 0, width: 900, textAlign: 'center', fontSize: 88, fontWeight: 900, letterSpacing: -2, lineHeight: 1.12, opacity: 1 - out}}>
+    <div style={{position: 'absolute', top: 0, left: 0, width: SAFE.w, textAlign: 'center', fontSize: 88, fontWeight: 900, letterSpacing: -2, lineHeight: 1.12, opacity: 1 - out}}>
       <Rise at={0} style={{marginRight: 22}}>
         <Grad>{n}</Grad>
       </Rise>
@@ -200,13 +190,12 @@ const Cap: React.FC<{from: number; children: string}> = ({from, children}) => {
   if (frame < from) return null;
   const p = Math.min(pop(frame, from, {damping: 20, stiffness: 160}), 1);
   return (
-    <div style={{position: 'absolute', top: 128, left: 0, width: 900, display: 'flex', justifyContent: 'center', transform: `translateY(${(1 - p) * 30 - q * 20}px)`, opacity: p * (1 - q)}}>
+    <div style={{position: 'absolute', top: 128, left: 0, width: SAFE.w, display: 'flex', justifyContent: 'center', transform: `translateY(${(1 - p) * 30 - q * 20}px)`, opacity: p * (1 - q)}}>
       <span style={{...glass, fontSize: 38, fontWeight: 700, color: C.white, padding: '10px 32px', borderRadius: 999}}>{children}</span>
     </div>
   );
 };
 
-/* ---------------- Background ---------------- */
 const Background: React.FC = () => {
   const frame = useCurrentFrame();
   return (
@@ -260,7 +249,6 @@ const ScreenWrap: React.FC<{children: React.ReactNode}> = ({children}) => {
   return <div style={{...fill, opacity: a * (1 - b), transform: `translateY(${(1 - a) * 20 - b * 16}px)`}}>{children}</div>;
 };
 
-/* finger tap with ring. x,y in screen px, `at` = press frame (local) */
 const Tap: React.FC<{at: number; x: number; y: number}> = ({at, x, y}) => {
   const f = useCurrentFrame();
   const appear = prog(f, at - 14, at - 3);
@@ -444,7 +432,7 @@ const DetailsScreen: React.FC = () => {
 /* ---------------- 3. AI ---------------- */
 const AIScreen: React.FC = () => {
   const f = useCurrentFrame();
-  const sp = spring({frame: Math.max(0, f - 12), fps: FPS, config: {damping: 9, stiffness: 70, mass: 1}});
+  const sp = spring({frame: Math.max(0, f - 12), fps: config.fps, config: {damping: 9, stiffness: 70, mass: 1}});
   const angle = -90 + 148 * sp + (sp > 0.9 ? Math.sin(f / 3) * 1.6 : 0);
   const txt = prog(f, 40, 52);
   const reasons = [
@@ -511,8 +499,8 @@ const AIScreen: React.FC = () => {
 /* ---------------- 4. ALERTS ---------------- */
 const AW = 344;
 const AH = 330;
-const HY = 95; // "high" alert line
-const LY = 288; // "low" alert line
+const HY = 95;
+const LY = 288;
 const AN = 48;
 const APTS = Array.from({length: AN}, (_, i): Pt => {
   const t = i / (AN - 1);
@@ -581,7 +569,6 @@ const AlertsScreen: React.FC = () => {
           </div>
         );
       })}
-      {/* push notification */}
       {broke && (
         <div style={{position: 'absolute', left: 20, right: 20, top: 60, zIndex: 25, transform: `translateY(${(1 - bp) * -170}px)`}}>
           <div style={{background: 'rgba(255,255,255,0.97)', borderRadius: 30, padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 20px 50px rgba(10,20,60,0.30)', border: `1.5px solid ${UI.line}`}}>
@@ -708,14 +695,12 @@ const JournalScreen: React.FC = () => {
   return (
     <div style={{...fill, background: UI.bg}}>
       <div style={{position: 'absolute', left: 28, top: 76, fontSize: 36, fontWeight: 900, color: UI.ink}}>Your trading report</div>
-      {/* booked card */}
       <div style={{position: 'absolute', left: 28, top: 138, width: 400, height: 190, borderRadius: 36, background: UI.greenBg, border: '2px solid #9ED9B8', padding: '22px 28px'}}>
         <div style={{fontSize: 21, fontWeight: 700, color: UI.mute}}>Booked profit · last 30 days</div>
         <div style={{fontSize: 68, fontWeight: 900, color: UI.green, letterSpacing: -2, lineHeight: '84px'}}>+{inr(booked, 0)}</div>
         <div style={{height: 12, borderRadius: 6, background: UI.green, width: `${100 * prog(f, 4, 24)}%`}} />
         <div style={{fontSize: 20, fontWeight: 800, color: UI.green, marginTop: 8}}>{landed ? '4' : '3'} made money · 0 lost</div>
       </div>
-      {/* calendar */}
       <div style={{...card, position: 'absolute', left: 28, top: 346, width: 400, height: 344}}>
         <div style={{position: 'absolute', left: 26, top: 22, right: 26, display: 'flex', justifyContent: 'space-between', fontSize: 26, fontWeight: 900, color: UI.ink}}>
           <span>Your trading days</span>
@@ -746,7 +731,6 @@ const JournalScreen: React.FC = () => {
           {landed && <div style={{position: 'absolute', left: 3 * 50 + 21 - (20 + lp * 50), top: 3 * 50 + 21 - (20 + lp * 50), width: 40 + lp * 100, height: 40 + lp * 100, borderRadius: '50%', border: `4px solid ${UI.green}`, opacity: 1 - lp}} />}
         </div>
       </div>
-      {/* note */}
       <div style={{...card, position: 'absolute', left: 28, top: 708, width: 400, height: 200, padding: '20px 26px', opacity: prog(f, 50, 60), transform: `translateY(${(1 - prog(f, 50, 60)) * 30}px)`}}>
         <div style={{fontSize: 20, fontWeight: 800, color: UI.mute}}>Why I took this trade</div>
         <div style={{fontSize: 27, fontWeight: 800, color: UI.ink, marginTop: 8, lineHeight: 1.25, minHeight: 68}}>{typed}</div>
@@ -756,7 +740,6 @@ const JournalScreen: React.FC = () => {
           </span>
         </div>
       </div>
-      {/* exit toast that flies into the calendar */}
       {f < 50 && (
         <div
           style={{
@@ -778,7 +761,6 @@ const JournalScreen: React.FC = () => {
 
 const SCREENS = [SearchScreen, DetailsScreen, AIScreen, AlertsScreen, BasketScreen, JournalScreen];
 
-/* ---------------- Persistent phone (global timeline) ---------------- */
 const PhoneLayer: React.FC = () => {
   const frame = useCurrentFrame();
   if (frame < STEP_START - 10 || frame > STEPS_END) return null;
@@ -813,7 +795,7 @@ const StepDots: React.FC = () => {
   const active = Math.min(5, Math.floor((frame - STEP_START) / STEP_LEN));
   const op = prog(frame, STEP_START, STEP_START + 10) * (1 - prog(frame, STEPS_END - 10, STEPS_END));
   return (
-    <div style={{position: 'absolute', left: 0, top: 1250, width: 900, display: 'flex', justifyContent: 'center', gap: 14, opacity: op}}>
+    <div style={{position: 'absolute', left: 0, top: 1250, width: SAFE.w, display: 'flex', justifyContent: 'center', gap: 14, opacity: op}}>
       {STEPS.map((_, i) => (
         <div key={i} style={{width: i === active ? 56 : 16, height: 16, borderRadius: 8, background: i === active ? C.accent : 'rgba(246,243,236,0.22)'}} />
       ))}
@@ -834,7 +816,7 @@ const Hook: React.FC = () => {
   const line = partial(MESS, prog(frame, 0, 40, Easing.linear));
   return (
     <Safe>
-      <svg width={900} height={500} style={{position: 'absolute', left: 0, top: 650, opacity: 0.5 * (1 - out)}}>
+      <svg width={SAFE.w} height={500} style={{position: 'absolute', left: 0, top: 650, opacity: 0.5 * (1 - out)}}>
         <path d={toPath(line)} fill="none" stroke={C.red} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       {NAMES.map((n, i) => {
@@ -852,7 +834,7 @@ const Hook: React.FC = () => {
           </div>
         );
       })}
-      <div style={{position: 'absolute', top: 360, width: 900, textAlign: 'center', opacity: 1 - out, transform: `scale(${1 + out * 0.08})`}}>
+      <div style={{position: 'absolute', top: 360, width: SAFE.w, textAlign: 'center', opacity: 1 - out, transform: `scale(${1 + out * 0.08})`}}>
         <div style={{fontSize: 130, fontWeight: 900, lineHeight: 1.04, letterSpacing: -4}}>
           <Rise at={0}>Stock research</Rise>
           <br />
@@ -874,16 +856,16 @@ const RevealScene: React.FC = () => {
   return (
     <Safe>
       <div style={{opacity: 1 - out}}>
-        <div style={{position: 'absolute', left: 350, top: 150, width: 200, height: 200, transform: `scale(${lp}) rotate(${(1 - lp) * -30}deg)`, filter: `drop-shadow(0 0 40px ${C.accent}66)`}}>
+        <div style={{position: 'absolute', left: (SAFE.w - 200) / 2, top: 150, width: 200, height: 200, transform: `scale(${lp}) rotate(${(1 - lp) * -30}deg)`, filter: `drop-shadow(0 0 40px ${C.accent}66)`}}>
           <Img
             src={LOGO}
             style={{width: '100%', height: '100%', objectFit: 'contain', borderRadius: 44}}
           />
         </div>
-        <div style={{position: 'absolute', top: 390, width: 900, textAlign: 'center', fontSize: 116, fontWeight: 900, letterSpacing: -2}}>
+        <div style={{position: 'absolute', top: 390, width: SAFE.w, textAlign: 'center', fontSize: 116, fontWeight: 900, letterSpacing: -2}}>
           <Rise at={8}>OptionXi</Rise>
         </div>
-        <div style={{position: 'absolute', top: 550, width: 900, textAlign: 'center', fontSize: 50, fontWeight: 700, opacity: sp, transform: `translateY(${(1 - sp) * 24}px)`}}>
+        <div style={{position: 'absolute', top: 550, width: SAFE.w, textAlign: 'center', fontSize: 50, fontWeight: 700, opacity: sp, transform: `translateY(${(1 - sp) * 24}px)`}}>
           <Grad>Research. Practice. Track.</Grad>
         </div>
       </div>
@@ -923,7 +905,7 @@ const ProofScene: React.FC = () => {
   return (
     <Safe>
       <div style={{opacity: 1 - out}}>
-        <div style={{position: 'absolute', top: 120, left: 0, width: 900, display: 'flex', justifyContent: 'center', gap: 14}}>
+        <div style={{position: 'absolute', top: 120, left: 0, width: SAFE.w, display: 'flex', justifyContent: 'center', gap: 14}}>
           {[0, 1, 2, 3, 4].map((i) => {
             const sp = Math.min(pop(frame, 6 + i * 4, {damping: 9}), 1.2);
             return (
@@ -936,15 +918,15 @@ const ProofScene: React.FC = () => {
             );
           })}
         </div>
-        <div style={{position: 'absolute', top: 260, width: 900, textAlign: 'center', fontSize: 104, fontWeight: 900, letterSpacing: -2, transform: `translateY(${(1 - rp) * 40}px)`, opacity: rp}}>
+        <div style={{position: 'absolute', top: 260, width: SAFE.w, textAlign: 'center', fontSize: 104, fontWeight: 900, letterSpacing: -2, transform: `translateY(${(1 - rp) * 40}px)`, opacity: rp}}>
           4.2 Rating
         </div>
         <div style={{opacity: frame >= 20 ? 1 : 0}}>
-          <div style={{position: 'absolute', top: 430, width: 900, textAlign: 'center', fontSize: 240, fontWeight: 900, letterSpacing: -6, lineHeight: 1, color: C.amber}}>
+          <div style={{position: 'absolute', top: 430, width: SAFE.w, textAlign: 'center', fontSize: 240, fontWeight: 900, letterSpacing: -6, lineHeight: 1, color: C.amber}}>
             {Math.round(10 * prog(f, 0, 35, Easing.out(Easing.cubic)))}K+
           </div>
-          <div style={{position: 'absolute', top: 700, width: 900, textAlign: 'center', fontSize: 62, fontWeight: 800, transform: `translateY(${(1 - ip) * 40}px)`, opacity: ip}}>Installs</div>
-          <div style={{position: 'absolute', top: 860, left: 190, width: 520, transform: `scale(${bp})`, opacity: Math.min(bp, 1)}}>
+          <div style={{position: 'absolute', top: 700, width: SAFE.w, textAlign: 'center', fontSize: 62, fontWeight: 800, transform: `translateY(${(1 - ip) * 40}px)`, opacity: ip}}>Installs</div>
+          <div style={{position: 'absolute', top: 860, left: (SAFE.w - 520) / 2, width: 520, transform: `scale(${bp})`, opacity: Math.min(bp, 1)}}>
             <Img src={PLAY} style={{width: '100%', display: 'block'}} />
           </div>
         </div>
@@ -968,27 +950,26 @@ const Cta: React.FC = () => {
   const note = prog(frame, 24, 34);
   return (
     <Safe>
-      <div style={{position: 'absolute', left: 350, top: 110, width: 200, height: 200, transform: `scale(${lp})`, filter: `drop-shadow(0 0 50px ${C.accent}77)`}}>
+      <div style={{position: 'absolute', left: (SAFE.w - 200) / 2, top: 110, width: 200, height: 200, transform: `scale(${lp})`, filter: `drop-shadow(0 0 50px ${C.accent}77)`}}>
         <Img src={LOGO} style={{width: '100%', height: '100%', objectFit: 'contain', borderRadius: 44}} />
       </div>
-      <div style={{position: 'absolute', top: 350, width: 900, textAlign: 'center', fontSize: 130, fontWeight: 900, letterSpacing: -3}}>
+      <div style={{position: 'absolute', top: 350, width: SAFE.w, textAlign: 'center', fontSize: 130, fontWeight: 900, letterSpacing: -3}}>
         <Rise at={6}>Try</Rise> <Rise at={9}>it</Rise> <Rise at={12}>now.</Rise>
       </div>
-      <div style={{position: 'absolute', top: 530, width: 900, textAlign: 'center', fontSize: 52, fontWeight: 700, transform: `translateY(${(1 - sub) * 40}px)`, opacity: sub}}>
+      <div style={{position: 'absolute', top: 530, width: SAFE.w, textAlign: 'center', fontSize: 52, fontWeight: 700, transform: `translateY(${(1 - sub) * 40}px)`, opacity: sub}}>
         <Grad>Practice before you invest.</Grad>
       </div>
-      <div style={{position: 'absolute', top: 640, left: 190, width: 520, transform: `scale(${Math.min(pop(frame, 14, {damping: 12}), 1.1) * pulse})`, opacity: Math.min(pop(frame, 14), 1)}}>
+      <div style={{position: 'absolute', top: 640, left: (SAFE.w - 520) / 2, width: 520, transform: `scale(${Math.min(pop(frame, 14, {damping: 12}), 1.1) * pulse})`, opacity: Math.min(pop(frame, 14), 1)}}>
         <Img src={PLAY} style={{width: '100%', display: 'block'}} />
       </div>
-      <div style={{position: 'absolute', top: 880, width: 900, textAlign: 'center', fontSize: 50, fontWeight: 800, opacity: note}}>Link in caption</div>
-      <div style={{position: 'absolute', top: 1010, left: 50, width: 800, textAlign: 'center', fontSize: 26, fontWeight: 600, color: C.mute, opacity: note}}>
+      <div style={{position: 'absolute', top: 880, width: SAFE.w, textAlign: 'center', fontSize: 50, fontWeight: 800, opacity: note}}>Link in caption</div>
+      <div style={{position: 'absolute', top: 1010, left: 50, width: SAFE.w - 100, textAlign: 'center', fontSize: 26, fontWeight: 600, color: C.mute, opacity: note}}>
         Virtual trading with practice money. Not investment advice.
       </div>
     </Safe>
   );
 };
 
-/* ---------------- Composition ---------------- */
 const S: React.FC<{from: number; to: number; children: React.ReactNode}> = ({from, to, children}) => (
   <Sequence from={from} durationInFrames={to - from}>
     {children}
@@ -1013,5 +994,8 @@ export const Reel: React.FC = () => (
     ))}
     <S from={T.proof[0]} to={T.proof[1]}><ProofScene /></S>
     <S from={T.cta[0]} to={T.cta[1]}><Cta /></S>
+    <SafeGuide />
   </AbsoluteFill>
 );
+
+export default Reel;

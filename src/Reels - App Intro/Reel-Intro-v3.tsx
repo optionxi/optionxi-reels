@@ -11,11 +11,8 @@
  *   660–810   OPEN SOURCE Terminal types `git clone ...`
  *   810–900   CTA         Logo, 4.2 rating, 10K+ installs, Play badge
  *
- * NOTE: the "Real market. Fake money." idea scene has been removed.
- *       Composition should be durationInFrames={900}.
- *
  * SAFE ZONE (Instagram): nothing important above y=250 or below y=1580.
- * Set DEBUG_SAFE = true to see the guides.
+ * Set DEBUG_SAFE = true in shared/safe-area.tsx to see the guides.
  *
  * Usage:
  *   import { Reel } from "./Reel-Tutorial";
@@ -33,20 +30,16 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import {getSafe, SafeGuide} from "../shared/safe-area";
 
 // ───────────────────────── config ─────────────────────────
-export const REEL_DURATION = 900;
-
 export const config = {
-  durationInFrames: REEL_DURATION,
+  durationInFrames: 900,
   fps: 30,
   width: 1080,
   height: 1920,
 };
-
-
-const DEBUG_SAFE = false;
-const SAFE = { top: 250, bottom: 1580, side: 60 };
+const SAFE = getSafe(config);
 
 const LOGO = "https://optionxi.com/assets/images/logo_xi.png";
 const BADGE =
@@ -107,16 +100,6 @@ const Background: React.FC = () => {
     </AbsoluteFill>
   );
 };
-
-const SafeGuide: React.FC = () =>
-  DEBUG_SAFE ? (
-    <AbsoluteFill style={{ pointerEvents: "none" }}>
-      <div style={{ position: "absolute", left: 0, right: 0, top: SAFE.top, borderTop: "3px dashed red" }} />
-      <div style={{ position: "absolute", left: 0, right: 0, top: SAFE.bottom, borderTop: "3px dashed red" }} />
-      <div style={{ position: "absolute", top: 0, bottom: 0, left: SAFE.side, borderLeft: "3px dashed red" }} />
-      <div style={{ position: "absolute", top: 0, bottom: 0, right: SAFE.side, borderRight: "3px dashed red" }} />
-    </AbsoluteFill>
-  ) : null;
 
 /** Fades a scene in and out. `dur` = scene length in frames. */
 const Scene: React.FC<{ dur: number; children: React.ReactNode }> = ({ dur, children }) => {
@@ -192,9 +175,9 @@ const Caption: React.FC<{
     <div
       style={{
         position: "absolute",
-        top: 268,
-        left: 70,
-        right: 70,
+        top: SAFE.y0 + 18,
+        left: SAFE.left + 10,
+        right: SAFE.left + 10,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -454,7 +437,7 @@ const Hook: React.FC = () => {
             key={i}
             style={{
               position: "absolute",
-              left: 540 - 380 * p,
+              left: config.width / 2 - 380 * p,
               top: 520 - 380 * p,
               width: 760 * p,
               height: 760 * p,
@@ -468,7 +451,7 @@ const Hook: React.FC = () => {
         src={LOGO}
         style={{
           position: "absolute",
-          left: 540 - 95,
+          left: config.width / 2 - 95,
           top: 425,
           width: 190,
           height: 190,
@@ -481,8 +464,8 @@ const Hook: React.FC = () => {
         style={{
           position: "absolute",
           top: 680,
-          left: 70,
-          right: 70,
+          left: SAFE.left,
+          right: SAFE.left,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -950,7 +933,7 @@ const Outro: React.FC = () => {
       <div
         style={{
           position: "absolute",
-          bottom: 360,
+          bottom: SAFE.bottom + 20,
           left: 80,
           right: 80,
           textAlign: "center",
@@ -967,8 +950,6 @@ const Outro: React.FC = () => {
 };
 
 // ───────────────────────── root ─────────────────────────
-export const REEL_FRAMES = 900;
-
 export const Reel: React.FC = () => (
   <AbsoluteFill style={{ background: C.bg }}>
     <Background />

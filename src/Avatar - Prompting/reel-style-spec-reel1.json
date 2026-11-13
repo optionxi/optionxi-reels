@@ -1,0 +1,381 @@
+{
+  "_meta": {
+    "name": "Explainer-reel style spec #2 (floating 3D-ish app tiles + UI cards, NO avatar)",
+    "purpose": "Describes the look, motion language and scene flow of a second reference vertical reel so an LLM can build a similar Remotion project with a different brand, topic and content. Keep the STRUCTURE and MOTION; swap the BRAND and CONTENT.",
+    "reference": "53.7s, 1080x1920 (source is 60fps; build at 30fps), 9:16. Topic: 'YouTube Agent Skill - 11 free Claude skills that run a YouTube channel'. Captions are English. Voiceover not analysed (frames only), so word timings are estimated at about 1 second per caption chunk.",
+    "differs_from_reel1": [
+      "No presenter avatar. The Claude pixel-mascot tile is the only 'character' and acts as a hub.",
+      "Headline is CENTERED at the top (not left-aligned) and mixes bold sans with italic serif accent words.",
+      "Hero objects are glossy rounded-square app tiles and cards with big soft shadows and slight 3D tilt.",
+      "Narrative is a hook-comparison + feature tour (skill by skill), not a numbered step-by-step."
+    ],
+    "how_to_use": "Replace every value under `brand` and `content`. Do not change `layout`, `motion`, `components` or `scene_grammar` unless asked.",
+    "caveat": "Hex values are eyeballed from frames (video compression). Treat them as close approximations."
+  },
+  "format": {
+    "aspect": "9:16",
+    "design_resolution": [1080, 1920],
+    "reference_resolution": [1080, 1920],
+    "fps": 30,
+    "source_fps": 60,
+    "target_duration_sec": "reference is 54s; 45-60s works. Scale beats proportionally.",
+    "audio": "voiceover drives timing; each caption chunk is one beat (about 1-2.5s)"
+  },
+  "brand": {
+    "_swap_me": true,
+    "product_name": "YouTube Agent Skill",
+    "hub_icon": "Claude pixel-mascot (coral/orange pixel crab-like creature with two dark eyes) on a white rounded-square tile",
+    "cta_keyword": "YOUTUBE",
+    "colors": {
+      "bg_base": "#F7F4F2",
+      "bg_blob_warm": "#F6E6E0",
+      "bg_blob_cool": "#EEEFF3",
+      "ink": "#1C1B22",
+      "accent_blue": "#3A6F8F",
+      "accent_coral": "#B5533C",
+      "accent_coral_soft": "#FBE3DB",
+      "hub_coral": "#E8573F",
+      "youtube_red": "#D91E26",
+      "gold_coin": "#F2A93B",
+      "card_bg": "#FFFFFF",
+      "dark_chip_bg": "#1F2128",
+      "muted_text": "#8C8A94",
+      "orange_thumb_gradient": ["#F08A3C", "#E0643A"],
+      "blue_thumb_gradient": ["#3E6F8C", "#8FB0C4"]
+    },
+    "color_roles": "Blue = default accent for nouns and nouns-as-tools (YouTube, Claude, titles, videos, audience). Coral/brick = accent for verbs and ideas (build, free, worked, week, work, toolkit) and for 'skill' labels. Red is reserved ONLY for YouTube-related UI (play button, upload, virality icon, primary buttons). Dark ink chips for secondary labels.",
+    "fonts": {
+      "headline_sans": "Inter / Plus Jakarta-style bold grotesk, weight 700-800, tight tracking, about 60-64px at 1080w",
+      "headline_accent_serif": "Italic high-contrast serif (e.g. Instrument Serif Italic / Playfair Italic), same size as sans, used for 1 key word per headline in coral or blue",
+      "ui_text": "Inter / Plus Jakarta 500-700",
+      "mono": "JetBrains Mono / IBM Plex Mono for slash-command labels (/yt-script), timestamps, code chips",
+      "eyebrow": "none in this reel (no '// step' eyebrow)"
+    }
+  },
+  "layout": {
+    "_note": "Percentages of the 9:16 frame. Same skeleton every beat: headline on top, one hero object in the middle, empty airy space around it.",
+    "safe_margin_x_pct": 6,
+    "headline": {
+      "align": "center",
+      "y_pct_center": 8,
+      "max_lines": 2,
+      "size_px_at_1080": 62,
+      "weight": 800,
+      "color": "ink",
+      "highlight": "1 (sometimes 2) keywords per chunk: blue sans, coral sans with soft pill highlight behind it, or coral/blue italic serif",
+      "highlight_pill": "Some accent words sit on a rounded rectangle tint (accent_coral_soft or light blue) - e.g. 'YouTube Agent', 'hook viewers,', 'virality skill.', 'hook formulas.'",
+      "reveal": "word-by-word; each new word rises about 12px and fades in over 6 frames. Previous chunk blurs out (blur 0 to 12px, opacity to 0, about 8 frames) while the new chunk's first word appears, so you often see a ghosted old line behind the new one.",
+      "chunking": "2-5 words per chunk, chunk replaces previous one; sometimes a chunk extends in place ('Building your' + 'YouTube' + 'channel now')."
+    },
+    "hero_zone": {
+      "y_pct_from": 12,
+      "y_pct_to": 90,
+      "note": "Hero object is vertically centered around 45-55% of height (taller than reel1). Width 80-90% for cards, 25-35% for single icon tiles."
+    },
+    "hub": {
+      "description": "When the Claude mascot tile appears it is centered (about 48% x, 52% y) with satellite tiles orbiting on a thin ring.",
+      "size_px": 190
+    },
+    "avatar": "NONE",
+    "wordmark": "NONE (brand shown via product card names only)"
+  },
+  "background": {
+    "type": "very light warm-grey with faint peach/pink glow, almost flat",
+    "layers": [
+      "base solid bg_base",
+      "large soft radial peach glow bottom-right and bottom-center, about 40% opacity",
+      "very faint cool-grey wash top-left",
+      "subtle vignette in corners"
+    ],
+    "motion": "glow drifts very slowly; intensifies slightly in the last 2 beats",
+    "particles": "tiny coral 4-point sparkles and dots burst around a card on emphasis beats (hook typed, next-video card, idea card, 21 badge)"
+  },
+  "motion": {
+    "_note": "Spring/ease-out only. Objects feel like soft glossy toys: they overshoot, tilt a few degrees and settle.",
+    "springs": {
+      "card_in": { "damping": 16, "stiffness": 150, "mass": 0.9, "from": "translateY(50px) scale(.94) rotateX(8deg) opacity 0", "to": "identity" },
+      "tile_pop": "scale 0 to 1.12 to 1 over 12 frames, slight rotate (-6deg to 0)",
+      "badge_pop": "tilted badge (about -8deg) scales 0 to 1.2 to 1 with overshoot, then gently bobs",
+      "card_out": "opacity 1 to 0 + blur 0 to 10px + scale 1 to .97 over 8 frames",
+      "item_stagger_frames": 5
+    },
+    "scene_transition": "No hard cuts. Outgoing hero card blurs/fades as the headline chunk changes; the next hero springs in 6-10 frames after the first new headline word. Some hero objects persist across several chunks and just change state (card stays, content types in).",
+    "persistent_objects": "An object often shrinks and slides to a new anchor instead of disappearing (e.g. the YouTube channel card shrinks under the mascot tile; mascot tile shrinks to bottom-center under the GitHub card; the /yt-viral icon shrinks to top-left of the analysis cards).",
+    "ring_pulse": "Coral outlined ring expands from a tile (scale .6 to 1.8, opacity .6 to 0, about 20 frames) on reveal beats (mascot appears, virality icon, hub).",
+    "orbit": "Satellite tiles fly in from off-card, settle on a circle around the hub and then slowly orbit (about 0.15 rad/s) with a thin ring line.",
+    "cursor": "macOS arrow cursor glides to a target; target gets hover state or a tiny click ripple (button turns 'Channel ready', 'Review' button, a thumbnail gets selected with a corner-handle selection box).",
+    "selection_box": "Thin blue rectangle with white corner handles drawn around an element that is 'being edited' (repo name field, title card, plan week).",
+    "typing": "text types at about 30 chars/sec with block caret; caret shown after last char.",
+    "number_counter": "badge text steps up (1 to 21, hook formulas; 11 skills) with a fast count-up over about 10 frames."
+  },
+  "components": {
+    "_note": "All cards: white bg, radius about 36px@1080, soft diffuse shadow (0 30px 70px rgba(28,27,34,.10)) plus a faint inner top highlight for a glossy look. App tiles are rounded squares (radius about 28%) with white face and a small coloured glyph tile inside.",
+    "ChannelCard": "White card with a blue gradient banner (top 35%), a round avatar placeholder at left, bold 'Your channel' text, a red 'Create channel' pill button (becomes dark 'Channel ready' with check after click), and three empty grey tiles at the bottom. A glossy 3D red YouTube play button floats above the card top-center and later sits inside the avatar circle.",
+    "CoinTile3D": "Glossy orange-gold coin with white 'B' symbol and a soft glow ring; a small white tag '2010' tilts in at top-right. Used as the Bitcoin comparison.",
+    "MascotTile": "White rounded-square tile (about 190px) with the coral pixel mascot centered. Soft coral glow behind. Used as the hub and as the 'Claude' character. Can shrink to about 70px and sit bottom-center.",
+    "SatelliteTile": "Small white rounded-square (about 110px) with a coloured glyph tile on top and a bold label below ('Plan', 'Build', 'Idea', 'Script', 'Edit', 'Thumbnail', 'Upload'). Glyph colours rotate: blue (plan/script/edit), dark (build/thumbnail), coral (idea), red (upload).",
+    "RepoCard": "White card: small grey 'Owner /' text above bold mono repo name (outlined with selection box), one-line description, two small outlined tags ('MIT license', 'Open source') and a dark mono chip with the install command ('/plugin install youtube-agent'). A big tilted blue 'FREE' badge slaps onto the top-right corner, then shrinks.",
+    "BigBadge": "Tilted rounded-rectangle badge in accent blue with big white number and tiny caption ('FREE', '21 hook formulas', '11 skills', '11x channel median' in red). Pops in at a card corner with overshoot.",
+    "SkillGrid": "3x3 grid of small white square tiles, each a glyph + mono label (/yt-script, /yt-package, /yt-edit, /yt-comment, /yt-plan, /yt-viral, /yt-chapters, /yt-shorts, /yt-seo, /yt-retention, /yt-audit). Tiles pop in staggered, then a '11 skills' blue badge lands. On the next beat they scatter and fly toward the mascot.",
+    "SkillCard": "White card with a small blue glyph tile + mono command name at left (e.g. '/yt-script') and a status chip at right (Draft / 12:48 / Draft - your voice / Fits your 6 hrs). The body differs per skill (see flow).",
+    "ScriptBody": "Labelled sections 'HOOK' (typed text line) and 'SCRIPT' (grey placeholder bars, one with a coral diamond bullet, plus a coral 'Retention beat' chip).",
+    "ThumbnailCard": "Blue gradient thumbnail with big white heavy text ('$90 vs $900'), a white coffee-cup glyph and a grey person silhouette; below, label 'TITLE' and a typed title line. Tilts slightly and gets a blue selection box + coral sparkles.",
+    "Timeline": "Row of 4 audio-waveform blocks (blue, one dark) on a track with timecode '12:48' top-right; a pink striped 'cut' block and a red cut-marker float in, then an 'EDIT LIST' panel with chip '3 cuts' slides in underneath with rows: '00:42 Dead air' (pink row), '03:15 Filler: um, so', '07:03 Retake'.",
+    "CommentThread": "Top: white comment bubble (avatar letter circle, '@name 2h', blue 'Question' pill, question text). Below: skill card '/yt-comment' with a typed reply in the creator's voice and 'Edit' ghost button + blue 'Review' button (cursor clicks Review).",
+    "WeekPlanner": "Card '/yt-plan' with chip 'Fits your 6 hrs'. Seven day columns MON-SUN. Small white task tiles (Script, Film, Edit, Upload (red, bigger), Replies, Short) fly into columns in order, then a selection box wraps the week.",
+    "IdeaCard": "Small coral lightbulb tile + tiny caps label 'NEXT VIDEO' and bold line ('Grinder settings, explained'). A second card 'HOOK' with a dark arrow tile and typed hook line stacks beneath, then a video player card slides in with a progress bar and 3 diamond markers (retention points) - progress fills red.",
+    "ViralTile": "Large glossy red rounded-square with white up-trend arrow, coral ring pulse, then mono chip '/yt-viral' below. Later shrinks to top-left corner of analysis cards.",
+    "ThumbGrid": "Caption chip 'Illustrative example - Brew Lab' above a 2x3 grid of thumbnail cards (orange or blue gradient, bold white title, cup + silhouette, view count mono below). A dashed 'channel median 36K' label at the bottom. One card (412K) gets a red 'x channel median' ribbon and a cursor ripple, then lifts out alone.",
+    "AnalysisStack": "Under the lifted thumbnail: stacked white rows with tiny caps label and value - TITLE, HOOK (quoted text), STRUCTURE (chips: red 'Hook', blue 'Tests', coral 'Twist', dark 'Verdict'). Each row slides in with 5-frame stagger.",
+    "NewIdeaCard": "White card with coral lightbulb tile, caps label 'NEW IDEA FOR YOUR CHANNEL', bold two-line idea title, grey italic quote line, and the structure chips row. Beneath it two chips pop in: dark 'Your voice' and blue 'For budget beginners'.",
+    "FlowChain": "Small satellite tiles (Idea, Script, Thumbnail, Edit, Plan, Upload) travel along a curved line left to right, then rearrange into a ring around the mascot tile ('that's a lot of work').",
+    "HubRing": "Mascot tile center, 6 satellite tiles around a thin double ring; coral ring pulse on entry.",
+    "CommentBox": "White YouTube-style 'Add a comment' card with a small blue avatar circle, red play-button icon at right, a pink-outlined input field containing huge bold red keyword text ('YOUTUBE') and a round blue send button.",
+    "ToolkitBox": "Peach/white gift-box-like card titled 'YouTube Agent Skill' with grey subtitle '11 skills - free'. A coral lid tilts open and three dark/blue skill tiles pop out and float up."
+  },
+  "scene_grammar": {
+    "_note": "Each beat = [centered headline chunk] + [one hero object or state] + [optional badge/chip]. About 40-45 chunks in 54s.",
+    "beat_template": {
+      "headline": "2-5 words, voiceover-synced, 1 accent word (italic serif or coloured sans)",
+      "hero": "one component from `components`",
+      "enter": "card_in or tile_pop",
+      "exit": "card_out blur-fade, or shrink-and-relocate if the object is reused"
+    },
+    "pacing": "Very fast: new headline chunk about every 1-1.5s. Hero persists across 2-4 chunks when the visual still applies.",
+    "accent_word_rule": "Use italic serif accent for abstract/emotional words (easier, build, eleven, twenty-one, thumbnail, comment, week, craziest, watching, worked, voice, next, work, toolkit). Use blue or coral SANS accent for concrete product nouns (YouTube, Claude, titles, videos, hook viewers, virality skill, audience, alone)."
+  },
+  "flow": [
+    {
+      "id": "hook_compare",
+      "t_sec": [0, 5],
+      "headline_chunks": [
+        { "t": 0.0, "text": "Building your YouTube", "accent": "YouTube (blue)" },
+        { "t": 1.0, "text": "Building your YouTube channel now" },
+        { "t": 2.0, "text": "is like buying Bitcoin", "accent": "Bitcoin (coral italic serif)" },
+        { "t": 3.0, "text": "is like buying Bitcoin in 2010-", "accent": "Bitcoin italic, '2010-' on coral pill" },
+        { "t": 4.0, "text": "and it's easier", "accent": "easier (coral italic serif)" }
+      ],
+      "hero": "ChannelCard with floating red YouTube play button. At 2-3s the card ghosts back and CoinTile3D (Bitcoin) pops in above it with '2010' tag. At 4s coin swaps back to the big YouTube button and card sharpens again.",
+      "notes": "Social-proof analogy hook. Cursor appears at 5s and clicks 'Create channel'."
+    },
+    {
+      "id": "channel_ready",
+      "t_sec": [5, 7],
+      "headline_chunks": [
+        { "t": 5.0, "text": "to get started than ever" },
+        { "t": 6.0, "text": "Because", "accent": null }
+      ],
+      "hero": "Cursor clicks 'Create channel' on ChannelCard; button turns dark 'Channel ready' with tick; YouTube logo moves into the avatar circle.",
+      "notes": "Headline text is mid blur-swap here, so two lines overlap."
+    },
+    {
+      "id": "claude_reveal",
+      "t_sec": [7, 11],
+      "headline_chunks": [
+        { "t": 7.0, "text": "Because Claude can now", "accent": "Claude (blue)" },
+        { "t": 8.0, "text": "plan and" },
+        { "t": 9.0, "text": "plan and build your entire", "accent": "build (coral italic serif)" },
+        { "t": 10.0, "text": "plan and build your entire channel." }
+      ],
+      "hero": "ChannelCard shrinks to the bottom; MascotTile pops in center with coral ring pulse. Satellite tiles 'Plan' (left) and 'Build' (right) fly in and orbit on a thin ring. Mascot grows slightly on 'channel'.",
+      "avatar_pose": "n/a"
+    },
+    {
+      "id": "name_and_free",
+      "t_sec": [11, 14],
+      "headline_chunks": [
+        { "t": 10.8, "text": "It's" },
+        { "t": 11.0, "text": "It's called YouTube Agent", "accent": "YouTube Agent on coral pill" },
+        { "t": 12.0, "text": "It's called YouTube Agent Skill." },
+        { "t": 13.0, "text": "It's free, and it brings", "accent": "free (coral)" }
+      ],
+      "hero": "RepoCard (Owner / youtube-agent-skill, description 'Eleven Claude skills that run a YouTube channel.', tags MIT license / Open source, install chip). Repo name gets a selection box on 'called'. Mascot tile shrinks to about 70px below the card. At 12s big tilted blue 'FREE' badge slams in at the top-right and shrinks at 13s.",
+      "notes": "Satellite tiles and ChannelCard fade out as the RepoCard comes in."
+    },
+    {
+      "id": "eleven_skills",
+      "t_sec": [14, 16],
+      "headline_chunks": [
+        { "t": 14.0, "text": "eleven specialized", "accent": "eleven (coral italic serif)" },
+        { "t": 15.0, "text": "eleven specialized skills into Claude.", "accent": "Claude (blue)" }
+      ],
+      "hero": "SkillGrid pops in staggered (/yt-script, /yt-package, /yt-edit, /yt-comment, /yt-plan, /yt-viral, /yt-chapters, /yt-shorts, /yt-seo...). Blue '11 skills' badge lands on the grid. At 15s tiles scatter and get sucked toward the mascot tile at bottom with a coral ring pulse.",
+      "notes": "Mascot sits bottom-center, small. RepoCard is gone."
+    },
+    {
+      "id": "skill_script",
+      "t_sec": [16, 20],
+      "headline_chunks": [
+        { "t": 16.0, "text": "One" },
+        { "t": 17.0, "text": "One writes your scripts", "accent": "scripts (blue)" },
+        { "t": 18.0, "text": "using twenty-one different", "accent": "twenty-one (coral italic serif)" },
+        { "t": 19.0, "text": "using twenty-one different hook formulas.", "accent": "hook formulas on coral pill" }
+      ],
+      "hero": "SkillCard '/yt-script' with ScriptBody and chip 'Draft'. Placeholder bars fill in. Badge counts up '1 hook formulas' to '21 hook formulas' in the top-right corner. Hook line types: 'What if a $90 grinder beat ...'. Coral sparkles burst on the typed line.",
+      "notes": "The transcript of 'writes' is inferred from the ghost text 'One writing/using your scripts'; exact verb may differ."
+    },
+    {
+      "id": "skill_package",
+      "t_sec": [20, 23],
+      "headline_chunks": [
+        { "t": 20.0, "text": "One creates titles", "accent": "titles (blue)" },
+        { "t": 21.0, "text": "One creates titles and thumbnail ideas.", "accent": "thumbnail (coral italic serif)" }
+      ],
+      "hero": "SkillCard '/yt-package' containing ThumbnailCard ('$90 vs $900') and TITLE line typing 'I tested a $90 grinder against a $900 one'. At 21s the card tilts slightly and gets a blue selection box with corner handles and coral dots drifting.",
+      "notes": "Card transitions down into the next skill's timeline at 22s."
+    },
+    {
+      "id": "skill_edit",
+      "t_sec": [22, 25],
+      "headline_chunks": [
+        { "t": 22.0, "text": "One finds what to cut", "accent": "cut (coral)" },
+        { "t": 24.0, "text": "from your videos.", "accent": "videos (blue)" }
+      ],
+      "hero": "SkillCard '/yt-edit' (chip '12:48') starts with the thumbnail docked at the left of an empty track, then Timeline waveform blocks fill the track. Pink striped cut block + red scissor/cut marker drop in. An EDIT LIST panel slides up beneath with '3 cuts' and rows: 00:42 Dead air / 03:15 Filler: um, so / 07:03 Retake.",
+      "notes": "Headline blurs mid-change at 23s."
+    },
+    {
+      "id": "skill_comment",
+      "t_sec": [25, 27],
+      "headline_chunks": [
+        { "t": 25.0, "text": "Another drafts your comment", "accent": "comment (coral italic serif)" },
+        { "t": 26.0, "text": "Another drafts your comment replies." }
+      ],
+      "hero": "CommentThread: @maya.brews 'Question' comment above a '/yt-comment' card ('Draft - your voice'). Reply types: 'Great question! I am at 12 clicks for espresso. My full settings are pinned in the description.' Cursor moves to blue 'Review' button at 26s.",
+      "notes": "A thin vertical connector links the comment to the reply card."
+    },
+    {
+      "id": "skill_plan",
+      "t_sec": [27, 30],
+      "headline_chunks": [
+        { "t": 27.0, "text": "And one plans" },
+        { "t": 28.0, "text": "And one plans your entire week", "accent": "week (coral italic serif)" },
+        { "t": 29.0, "text": "on YouTube.", "accent": "YouTube (blue)" }
+      ],
+      "hero": "WeekPlanner '/yt-plan' with chip 'Fits your 6 hrs'. Tiles Script, Film, Edit, Upload (red, larger), Replies, Short fly into MON-SAT columns in sequence (stagger about 8 frames); at 28s a blue selection box wraps the full row.",
+      "notes": "Tiles carry the same glyph colours as the satellite tiles from the claude_reveal beat."
+    },
+    {
+      "id": "next_video_hook",
+      "t_sec": [30, 34],
+      "headline_chunks": [
+        { "t": 30.0, "text": "So you know what to post,", "accent": "post (blue)" },
+        { "t": 31.0, "text": "how to hook viewers,", "accent": "hook viewers on coral pill" },
+        { "t": 32.0, "text": "and how to" },
+        { "t": 33.0, "text": "and how to keep people watching.", "accent": "watching (coral italic serif)" }
+      ],
+      "hero": "IdeaCard 'NEXT VIDEO - Grinder settings, explained' with coral sparkles. A second 'HOOK' card slides under and types 'I wasted $400 on grinders so you do not have to.' Then a video player card (thumbnail 'Grinder settings') slides in below with a red progress bar and 3 diamond retention markers; the bar fills past each marker.",
+      "notes": "This is the 'what to post / hook / retention' summary beat."
+    },
+    {
+      "id": "viral_intro",
+      "t_sec": [34, 37],
+      "headline_chunks": [
+        { "t": 34.0, "text": "But the craziest", "accent": "craziest (coral italic serif)" },
+        { "t": 35.0, "text": "is the virality", "accent": "virality on coral pill" },
+        { "t": 36.0, "text": "is the virality skill.", "accent": "virality skill on coral pill" }
+      ],
+      "hero": "Previous cards blur away. ViralTile (red glossy up-trend icon) pops in with big coral ring pulse and particles, then shrinks slightly and a mono chip '/yt-viral' appears below.",
+      "notes": "Only beat where the main hero is a single large red icon."
+    },
+    {
+      "id": "viral_analysis",
+      "t_sec": [37, 42],
+      "headline_chunks": [
+        { "t": 37.0, "text": "It finds viral videos", "accent": "viral (blue)" },
+        { "t": 38.0, "text": "It finds viral videos in your niche," },
+        { "t": 39.0, "text": "analyzes their titles,", "accent": "titles (blue)" },
+        { "t": 40.0, "text": "analyzes their titles, hooks,", "accent": "hooks (blue)" },
+        { "t": 41.0, "text": "and structure,", "accent": "structure (coral italic serif)" }
+      ],
+      "hero": "ThumbGrid (caption 'Illustrative example - Brew Lab'; 6 cards with view counts; 'channel median 36K' label). One card (412K views) gets a red '11x channel median' ribbon and a cursor ripple, lifts out; ViralTile shrinks to the left. AnalysisStack builds under it: TITLE 'I tried every $20 espresso hack', HOOK '\"This $4 tool beat my $900 machine.\"', STRUCTURE chips Hook / Tests / Twist / Verdict.",
+      "notes": "Fastest information density in the reel - one new row every second."
+    },
+    {
+      "id": "new_idea",
+      "t_sec": [42, 46],
+      "headline_chunks": [
+        { "t": 42.0, "text": "then uses what worked", "accent": "worked (coral italic serif)" },
+        { "t": 43.0, "text": "to create video ideas", "accent": "video ideas (blue)" },
+        { "t": 44.0, "text": "in your voice,", "accent": "voice (coral italic serif)" },
+        { "t": 45.0, "text": "for your audience.", "accent": "audience (blue)" }
+      ],
+      "hero": "AnalysisStack and thumbnail collapse into a small NewIdeaCard ('NEW IDEA FOR YOUR CHANNEL - 5 cheap espresso hacks that actually work', quote line, structure chips). Card grows to full width. Dark chip 'Your voice' pops below at 44s, then blue chip 'For budget beginners' at 45s.",
+      "notes": "ViralTile stays as a small badge at the card's top-left until 43s."
+    },
+    {
+      "id": "workflow_chain",
+      "t_sec": [46, 50],
+      "headline_chunks": [
+        { "t": 46.0, "text": "From your next idea", "accent": "next (coral italic serif)" },
+        { "t": 47.0, "text": "to your next upload,", "accent": "next (coral italic serif)" },
+        { "t": 48.0, "text": "that's a lot of", "accent": null },
+        { "t": 49.0, "text": "that's a lot of work you", "accent": "work (coral italic serif)" }
+      ],
+      "hero": "Idea tile (left) and Upload tile (right) with a curved line between; Script, Thumbnail, Edit, Plan tiles drop in along the line, then rearrange into a ring and the mascot tile pops in at the center.",
+      "notes": "Reads as 'the whole pipeline from idea to upload'."
+    },
+    {
+      "id": "outro_hub",
+      "t_sec": [50, 52],
+      "headline_chunks": [
+        { "t": 50.0, "text": "have to figure" },
+        { "t": 51.0, "text": "have to figure out alone.", "accent": "alone (blue)" }
+      ],
+      "hero": "HubRing: mascot tile center, Idea/Script/Thumbnail/Edit/Plan/Upload around it with a coral ring pulse. At 51s the ring fades and the CommentBox ghosts in over the hub.",
+      "notes": "Transition beat into the CTA."
+    },
+    {
+      "id": "cta",
+      "t_sec": [52, 54],
+      "headline_chunks": [
+        { "t": 52.0, "text": "Comment YOUTUBE", "accent": "YOUTUBE" },
+        { "t": 53.0, "text": "and I'll send you the toolkit.", "accent": "toolkit (coral italic serif)" }
+      ],
+      "hero": "CommentBox with huge red 'YOUTUBE' text and blue send button on top; ToolkitBox 'YouTube Agent Skill - 11 skills - free' below. Lid opens and three skill tiles float out.",
+      "notes": "No follow pills, no wordmark, no avatar wave. The CTA keyword IS the hero."
+    }
+  ],
+  "caption_rules": {
+    "language": "English only",
+    "voiceover_sync": "Headline words appear on the frame the word is spoken (+/- 2 frames). If no voiceover, space words at about 3.5 words/second.",
+    "emphasis": "Max 1 accent word per chunk (rarely 2). Accent type rules are in scene_grammar.accent_word_rule.",
+    "length": "2-5 words per chunk, 1-2 lines, centered.",
+    "style": "Sentence case. No emoji. No stroke. No background box except the soft rounded tint behind some accent words."
+  },
+  "do_and_dont": {
+    "do": [
+      "Keep the same skeleton: centered headline on top, one hero object in the middle, airy empty space elsewhere",
+      "Mix bold sans with ONE italic serif accent word per chunk - this contrast is the signature look",
+      "Show the product as believable mini UI cards (repo card, skill cards, planner, comment box) built in HTML/CSS",
+      "Animate the action on the card: typing, cursor click, counters, tiles flying into slots",
+      "Reuse objects by shrinking and relocating them instead of hard removal",
+      "Keep red exclusively for YouTube-related UI; use the blue/coral pair for everything else"
+    ],
+    "dont": [
+      "No hard cuts, no whip pans, no heavy zooms",
+      "No presenter avatar or talking head in this style",
+      "Don't show two large hero objects at once (except during a blur-out)",
+      "Don't use real thumbnails or channel screenshots; label fakes as 'Illustrative example'",
+      "Don't add extra accent colours beyond blue + coral (+ red for YouTube)"
+    ]
+  },
+  "remotion_notes": {
+    "composition": { "id": "Reel2", "width": 1080, "height": 1920, "fps": 30 },
+    "structure": [
+      "Reel2.tsx - <AbsoluteFill> with Background, then <Sequence> per flow item",
+      "Persistent layer: Background + Headline (driven by a captions array with word frames and accent type)",
+      "Per-scene layer: hero component(s) in <Sequence>; shared objects (MascotTile, ChannelCard) live in a persistent layer with keyframed position/scale so they can relocate between beats",
+      "data/script.ts - array of beats: { startFrame, endFrame, words:[{text,frame,accent?:'blue'|'coral'|'serif-coral'|'serif-blue'|'pill'}], hero, extras }",
+      "components/ - one file per entry in `components`"
+    ],
+    "rules": [
+      "Use useCurrentFrame/useVideoConfig/spring/interpolate only - NO CSS transitions, setTimeout, requestAnimationFrame or Math.random() at render time",
+      "Use seeded values for sparkles/waveforms (hash of index)",
+      "Load fonts with @remotion/google-fonts: Inter (or Plus Jakarta Sans), Instrument Serif (italic), JetBrains Mono",
+      "Blur transitions via CSS filter: blur() driven by interpolate, never CSS transition",
+      "Glossy tiles: layered box-shadows + linear-gradient highlight overlay (no images)",
+      "Audio: <Audio src={staticFile('voice.mp3')} /> and derive word frames from a transcript JSON when available"
+    ]
+  }
+}
