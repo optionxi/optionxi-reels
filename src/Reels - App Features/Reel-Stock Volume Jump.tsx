@@ -1,16 +1,20 @@
 /**
- * OptionXi — "Volume Jumps" · Instagram Reel
- * 1080×1920 · 30 fps · 900 frames (30 s) · single file, zero extra deps
+ * OptionXi — "Volume Jumps" · Hook-first Instagram Reel (v2, from scratch)
+ * 1080×1920 · 30 fps · 810 frames (27 s)
  *
- * STORY (plain-language)
- *  1. HOOK       0–4 s     "The price moves last. The crowd moves first."  (dots rush into a stock)
- *  2. THE IDEA   4–10 s    "Volume = how many people are trading." Bars stay calm → one explodes to 6.2×.
- *  3. DIRECTION  10–14 s   "Which way did it go?" Buyers rushing in ↑ / sellers rushing out ↓.
- *  4. IN THE APP 14–22 s   Phone: live Volume Jumps card → View all → replay any past day → Strict / Relaxed.
- *  5. COMING SOON 22–26 s  Pick your number (8×, 30× …) → get a notification.
- *  6. CTA        26–30 s   "Volume Jumps. Live now." + Play Store badge.
+ * ALGORITHM-DRIVEN STRUCTURE
+ *  0–2.5 s   HOOK        dark pattern-interrupt, OPEN LOOP: volume explodes, price stays flat, "6.2×" teased
+ *  2.5–5 s   ANSWER      "It's called a volume jump." (resolves the hook fast = keeps them watching)
+ *  5–8 s     WHY         crowd rushes in first, price moves LAST (the value of the feature)
+ *  8–11 s    DIRECTION   buyers rushing in vs sellers rushing out
+ *  11–14 s   IN THE APP  live Volume Jumps card, refreshes every minute
+ *  14–17 s   ALERTS      pick 8× / 15× / 30× → instant notification  (the "wow" feature)
+ *  17–22 s   HISTORY     replay any past day, strict/relaxed sensitivity
+ *  22–25 s   CTA         "Find it in the OptionXi app" + Play Store badge + link in bio
+ *  25–27 s   LOOP        "Every big move starts with volume."  → cuts straight back into the hook
  *
- * Safe space comes from shared/safe-area.tsx. Set DEBUG_SAFE = true there to see it.
+ * A new visual/caption every ~2–3 s (retention), word-by-word captions (works muted),
+ * everything inside the safe area (top 8–22% captions, bottom 20% empty for IG UI).
  */
 import React, {useEffect, useState} from "react";
 import {
@@ -21,72 +25,56 @@ import {
   continueRender,
   delayRender,
   interpolate,
-  interpolateColors,
   spring,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import {getSafe, SafeGuide} from "../shared/safe-area";
 
-export const config = {
-  durationInFrames: 900,
-  fps: 30,
-  width: 1080,
-  height: 1920,
-};
-const SAFE = getSafe(config);
+export const config = {durationInFrames: 810, fps: 30, width: 1080, height: 1920};
 
-/* ------------------------------------------------------------------ */
-/*  Tokens                                                             */
-/* ------------------------------------------------------------------ */
+/* ---------------------------- tokens ---------------------------- */
 const C = {
-  cobalt: "#2A3BFF",
-  ink: "#0B1020",
-  paper: "#F4F6FB",
-  white: "#FFFFFF",
-  sun: "#FFD23F",
+  bg: "#F7F5F6",
+  ink: "#14121A",
+  rust: "#B2563B",
+  blue: "#2F6A8C",
+  coral: "#FF6B4A",
   green: "#12B76A",
-  red: "#F04438",
-  mute: "#5B6280",
-  line: "#E3E7F2",
+  red: "#E5484D",
+  mute: "#9A9A9E",
+  line: "#ECE8EA",
+  white: "#FFFFFF",
 };
-
-const DISPLAY = '"Bricolage Grotesque", "Noto Sans", "Arial Black", sans-serif';
-const UI = '"Figtree", "Noto Sans", system-ui, sans-serif';
-
+const SANS = '"Plus Jakarta Sans", "Noto Sans", system-ui, sans-serif';
+const SERIF = '"Instrument Serif", Georgia, serif';
+const MONO = '"JetBrains Mono", Menlo, monospace';
 const LOGO = "https://optionxi.com/assets/images/logo_xi.png";
 const BADGE = "https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png";
+const W = 880;
 
-const R = 18; // circle-wipe length between scenes
-
-/* ------------------------------------------------------------------ */
-/*  Motion helpers                                                     */
-/* ------------------------------------------------------------------ */
+/* ---------------------------- helpers ---------------------------- */
 const clampX = {extrapolateLeft: "clamp", extrapolateRight: "clamp"} as const;
 const OUT = Easing.bezier(0.16, 1, 0.3, 1);
 const INOUT = Easing.bezier(0.7, 0, 0.2, 1);
-
-const p = (f: number, a: number, b: number, easing: (t: number) => number = OUT) =>
-  interpolate(f, [a, b], [0, 1], {...clampX, easing});
-
-const SOFT = {damping: 22, stiffness: 160, mass: 0.8};
-const BOUNCY = {damping: 11, stiffness: 130, mass: 0.9};
-const PHONE_IN = {damping: 18, stiffness: 90, mass: 1};
-
-const fmtIN = (n: number, d = 0) =>
-  n.toLocaleString("en-IN", {minimumFractionDigits: d, maximumFractionDigits: d});
-
+const p = (f: number, a: number, b: number, e: (t: number) => number = OUT) =>
+  interpolate(f, [a, b], [0, 1], {...clampX, easing: e});
+const SOFT = {damping: 18, stiffness: 120, mass: 0.9};
+const BOUNCY = {damping: 10, stiffness: 140, mass: 0.8};
 const hash = (i: number) => {
   const s = Math.sin(i * 12.9898) * 43758.5453;
   return s - Math.floor(s);
 };
+const fmtIN = (n: number, d = 0) => n.toLocaleString("en-IN", {minimumFractionDigits: d, maximumFractionDigits: d});
+const card: React.CSSProperties = {
+  background: C.white,
+  borderRadius: 40,
+  border: "1.5px solid rgba(255,255,255,.9)",
+  boxShadow: "0 40px 70px rgba(20,18,26,.10), 0 8px 16px rgba(20,18,26,.06)",
+};
 
-/* ------------------------------------------------------------------ */
-/*  Fonts (loaded once, render waits for them)                         */
-/* ------------------------------------------------------------------ */
+/* ---------------------------- fonts ---------------------------- */
 const FONT_CSS =
-  "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Figtree:wght@400..800&display=block";
-
+  "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@500;700&display=block";
 const useFonts = () => {
   const [handle] = useState(() => delayRender("Loading fonts"));
   useEffect(() => {
@@ -100,1513 +88,565 @@ const useFonts = () => {
     const link = document.createElement("link");
     link.rel = "stylesheet";
     link.href = FONT_CSS;
-    link.onload = () => {
+    link.onload = () =>
       Promise.all([
-        document.fonts.load('800 80px "Bricolage Grotesque"'),
-        document.fonts.load('700 30px "Figtree"'),
+        document.fonts.load('800 80px "Plus Jakarta Sans"'),
+        document.fonts.load('italic 80px "Instrument Serif"'),
+        document.fonts.load('700 20px "JetBrains Mono"'),
       ])
         .then(done)
         .catch(done);
-    };
     link.onerror = done;
     document.head.appendChild(link);
-    return () => {
-      link.remove();
-    };
+    return () => link.remove();
   }, [handle]);
 };
 
-/* ------------------------------------------------------------------ */
-/*  Building blocks                                                    */
-/* ------------------------------------------------------------------ */
-const Band: React.FC<{top: number; children: React.ReactNode}> = ({top, children}) => (
-  <div
-    style={{
-      position: "absolute",
-      top,
-      left: 0,
-      width: config.width,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-    }}
-  >
-    {children}
-  </div>
-);
+/* ---------------------------- canvas ---------------------------- */
+const Canvas: React.FC = () => {
+  const f = useCurrentFrame();
+  const a = Math.sin(f / 90) * 60;
+  const b = Math.cos(f / 110) * 60;
+  return (
+    <AbsoluteFill
+      style={{
+        background: C.bg,
+        backgroundImage: `radial-gradient(closest-side at ${200 + a}px ${260 + b}px, #F4E7DF 0%, rgba(244,231,223,0) 100%),
+          radial-gradient(closest-side at ${900 - b}px ${1500 + a}px, #F5EFEE 0%, rgba(245,239,238,0) 100%)`,
+      }}
+    />
+  );
+};
 
-const Stack: React.FC<{children: React.ReactNode}> = ({children}) => (
-  <div style={{position: "absolute", inset: 0, display: "flex", justifyContent: "center"}}>{children}</div>
-);
+/* ---------------------------- captions ---------------------------- */
+type Kind = "serif" | "blue" | "pill";
+type Cap = {at: number; end: number; lines: string[]; acc: [number, Kind]};
+const CAPS: Cap[] = [
+  {at: 0, end: 58, lines: ["Every big move", "starts with this."], acc: [5, "serif"]},
+  {at: 76, end: 152, lines: ["It's called a", "volume jump."], acc: [4, "serif"]},
+  {at: 152, end: 240, lines: ["A sudden rush of", "people trading."], acc: [4, "serif"]},
+  {at: 240, end: 330, lines: ["Buyers or sellers?", "The app shows you."], acc: [0, "blue"]},
+  {at: 330, end: 420, lines: ["See them live", "on your home screen."], acc: [2, "serif"]},
+  {at: 420, end: 520, lines: ["Set an alert.", "Get pinged instantly."], acc: [2, "pill"]},
+  {at: 520, end: 600, lines: ["Or replay any", "past day."], acc: [1, "serif"]},
+  {at: 600, end: 670, lines: ["Strict or relaxed?", "Your call."], acc: [4, "serif"]},
+  {at: 670, end: 750, lines: ["Find it in the", "OptionXi app."], acc: [4, "pill"]},
+  {at: 750, end: 810, lines: ["Every big move", "starts with volume."], acc: [5, "serif"]},
+];
 
-/** Kinetic text: each word rises out of a mask. `out` makes it leave upward. */
-const Rise: React.FC<{
-  lines: string[];
-  at: number;
-  size: number;
-  color?: string;
-  colors?: string[];
-  out?: number;
-  stagger?: number;
-  weight?: number;
-}> = ({lines, at, size, color = C.ink, colors, out, stagger = 3, weight = 800}) => {
+const Captions: React.FC = () => {
+  const f = useCurrentFrame();
+  return (
+    <>
+      {CAPS.map((c, ci) => {
+        if (f < c.at - 1 || f > c.end + 14) return null;
+        const last = ci === CAPS.length - 1;
+        const out = last ? 0 : p(f, c.end, c.end + 12, INOUT);
+        const dark = ci === 0;
+        let k = 0;
+        return (
+          <div
+            key={ci}
+            style={{
+              position: "absolute",
+              top: 150,
+              left: 0,
+              width: 1080,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              fontFamily: SANS,
+              fontWeight: 800,
+              fontSize: dark ? 108 : 98,
+              lineHeight: 1.1,
+              letterSpacing: -2,
+              color: dark ? C.white : C.ink,
+              opacity: 1 - out,
+              filter: `blur(${out * 8}px)`,
+            }}
+          >
+            {c.lines.map((line, li) => (
+              <div key={li} style={{display: "flex", gap: 24, whiteSpace: "nowrap"}}>
+                {line.split(" ").map((w, wi) => {
+                  const idx = k++;
+                  const t = p(f, c.at + idx * 5, c.at + idx * 5 + 9);
+                  const isAcc = idx === c.acc[0];
+                  const st: React.CSSProperties = {
+                    display: "inline-block",
+                    opacity: t,
+                    transform: `translateY(${(1 - t) * 18}px)`,
+                    filter: `blur(${(1 - t) * 6}px)`,
+                  };
+                  if (isAcc && c.acc[1] === "serif")
+                    Object.assign(st, {fontFamily: SERIF, fontStyle: "italic", fontWeight: 400, color: dark ? C.coral : C.rust, fontSize: 118});
+                  if (isAcc && c.acc[1] === "blue") Object.assign(st, {color: C.blue});
+                  if (isAcc && c.acc[1] === "pill")
+                    Object.assign(st, {color: C.blue, background: "rgba(47,106,140,.12)", borderRadius: 26, padding: "0 22px"});
+                  return (
+                    <span key={wi} style={st}>
+                      {w}
+                    </span>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </>
+  );
+};
+
+/* ---------------------------- hero shell ---------------------------- */
+const Hero: React.FC<{from: number; dur: number; top?: number; keep?: boolean; children: React.ReactNode}> = ({
+  from,
+  dur,
+  top = 480,
+  keep,
+  children,
+}) => (
+  <Sequence from={from} durationInFrames={dur + (keep ? 0 : 12)}>
+    <Shell dur={dur} top={top} keep={keep}>
+      {children}
+    </Shell>
+  </Sequence>
+);
+const Shell: React.FC<{dur: number; top: number; keep?: boolean; children: React.ReactNode}> = ({dur, top, keep, children}) => {
   const f = useCurrentFrame();
   const {fps} = useVideoConfig();
-  let n = 0;
+  const inP = spring({frame: f, fps, config: SOFT});
+  const out = keep ? 0 : p(f, dur, dur + 12, INOUT);
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        fontFamily: DISPLAY,
-        fontWeight: weight,
-        fontSize: size,
-        lineHeight: 1.04,
-        letterSpacing: -size * 0.035,
+        position: "absolute",
+        left: (1080 - W) / 2,
+        top,
+        width: W,
+        opacity: Math.min(1, inP * 2) * (1 - out),
+        transform: `translateY(${(1 - inP) * 50}px) scale(${(0.92 + 0.08 * inP) * (1 - 0.04 * out)})`,
+        filter: `blur(${out * 10}px)`,
       }}
     >
-      {lines.map((line, li) => (
-        <div
-          key={li}
-          style={{display: "flex", columnGap: size * 0.24, whiteSpace: "nowrap", color: colors?.[li] ?? color}}
-        >
-          {line.split(" ").map((w, wi) => {
-            const k = n++;
-            const inP = spring({frame: f - at - k * stagger, fps, config: SOFT});
-            const outP = out === undefined ? 0 : spring({frame: f - out - k * 2, fps, config: SOFT});
-            const y = (1 - inP) * 110 - outP * 110;
-            return (
-              <span
-                key={wi}
-                style={{
-                  display: "inline-block",
-                  overflow: "hidden",
-                  padding: `0 ${size * 0.04}px ${size * 0.16}px`,
-                  margin: `0 ${-size * 0.04}px ${-size * 0.16}px`,
-                }}
-              >
-                <span style={{display: "inline-block", transform: `translateY(${y}%)`}}>{w}</span>
-              </span>
-            );
-          })}
-        </div>
+      {children}
+    </div>
+  );
+};
+
+const Label: React.FC<{t: string; style?: React.CSSProperties}> = ({t, style}) => (
+  <div style={{fontFamily: MONO, fontSize: 20, letterSpacing: 3, color: C.mute, fontWeight: 700, ...style}}>{t}</div>
+);
+
+const SpikeTile: React.FC<{size: number}> = ({size}) => {
+  const f = useCurrentFrame();
+  const up = p((f % 90) / 90, 0.15, 0.45, Easing.out(Easing.back(2)));
+  const bars = [0.35, 0.5, 0.4, 0.45, 0.38];
+  return (
+    <div style={{width: size, height: size, borderRadius: size * 0.28, background: "rgba(47,106,140,.12)", padding: size * 0.18, boxSizing: "border-box", display: "flex", alignItems: "flex-end", gap: size * 0.03}}>
+      {bars.map((b, i) => (
+        <div key={i} style={{flex: 1, height: `${(i === 2 ? b + (1 - b) * up : b) * 100}%`, borderRadius: size * 0.04, background: i === 2 && up > 0.5 ? C.coral : "rgba(47,106,140,.5)"}} />
       ))}
     </div>
   );
 };
 
-/** Circle-wipe scene shell */
-const Scene: React.FC<{bg: string; origin?: [number, number]; children: React.ReactNode}> = ({
-  bg,
-  origin,
-  children,
-}) => {
+const Cursor: React.FC<{x: number; y: number; opacity: number; tapAt?: number}> = ({x, y, opacity, tapAt}) => {
   const f = useCurrentFrame();
-  const wiping = origin !== undefined && f < R;
-  const r = p(f, 0, R, INOUT) * 2400;
+  const d = tapAt === undefined ? -1 : f - tapAt;
   return (
-    <AbsoluteFill
-      style={{
-        background: bg,
-        overflow: "hidden",
-        clipPath: wiping && origin ? `circle(${r}px at ${origin[0]}px ${origin[1]}px)` : undefined,
-      }}
-    >
-      {children}
+    <>
+      {d >= 0 && d < 16 && (
+        <div style={{position: "absolute", left: x - (30 + d * 4), top: y - (30 + d * 4), width: 60 + d * 8, height: 60 + d * 8, borderRadius: "50%", border: `3px solid ${C.coral}`, opacity: (1 - d / 16) * 0.8, zIndex: 9}} />
+      )}
+      <div style={{position: "absolute", left: x - 28, top: y - 28, width: 56, height: 56, borderRadius: "50%", background: "rgba(20,18,26,.28)", border: "3px solid rgba(255,255,255,.95)", boxSizing: "border-box", opacity, transform: `scale(${d >= 0 && d < 8 ? 0.8 : 1})`, zIndex: 10}} />
+    </>
+  );
+};
+
+/* ---------------------------- rows (mirror the app's cards) ---------------------------- */
+type Row = {t: string; r: number; up: boolean; sub: string; price: number; pct: number};
+const fmtPct = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
+const RowView: React.FC<{d: Row; top: number; h?: number; opacity?: number; tint?: number}> = ({d, top, h = 140, opacity = 1, tint = 0}) => {
+  const col = d.up ? C.green : C.red;
+  return (
+    <div style={{position: "absolute", left: 0, right: 0, top, height: h, padding: "0 34px", boxSizing: "border-box", display: "flex", alignItems: "center", gap: 24, opacity, background: `rgba(18,183,106,${0.14 * tint})`, fontFamily: SANS}}>
+      <div style={{width: 82, height: 82, borderRadius: 24, background: `${col}22`, color: col, fontWeight: 800, fontSize: 42, display: "flex", alignItems: "center", justifyContent: "center"}}>{d.t[0]}</div>
+      <div style={{flex: 1}}>
+        <div style={{display: "flex", alignItems: "center", gap: 14}}>
+          <span style={{fontWeight: 800, fontSize: 38, color: C.ink}}>{d.t}</span>
+          <span style={{fontWeight: 800, fontSize: 27, color: col, background: `${col}22`, borderRadius: 12, padding: "3px 12px"}}>
+            {d.up ? "↑" : "↓"} {d.r.toFixed(1)}×
+          </span>
+        </div>
+        <div style={{fontFamily: MONO, fontSize: 22, color: C.mute, marginTop: 6}}>{d.sub}</div>
+      </div>
+      <div style={{textAlign: "right"}}>
+        <div style={{fontWeight: 800, fontSize: 36, color: C.ink}}>₹{fmtIN(d.price, 2)}</div>
+        <div style={{fontWeight: 800, fontSize: 30, color: col}}>{fmtPct(d.pct)}</div>
+      </div>
+    </div>
+  );
+};
+
+/* ============ HOOK (0–80): dark pattern interrupt, open loop ============ */
+const HOOK_BARS = [0.22, 0.3, 0.25, 0.33, 0.27, 0.3, 0.24, 0.3, 0.26, 0.31, 0.25];
+const Hook: React.FC = () => {
+  const f = useCurrentFrame();
+  if (f > 82) return null;
+  const r = (1 - p(f, 56, 80, INOUT)) * 2400;
+  const spike = p(f, 24, 46, Easing.out(Easing.back(1.5)));
+  const sc = Math.max(0, Math.min(1, spike));
+  const reveal = p(f, 44, 52);
+  const base = 1480;
+  const maxH = 760;
+  const pulse = 1 + 0.06 * Math.sin(f / 2.5);
+  return (
+    <AbsoluteFill style={{background: C.ink, clipPath: `circle(${r}px at 540px 1050px)`}}>
+      <AbsoluteFill style={{backgroundImage: "radial-gradient(closest-side at 50% 62%, rgba(255,107,74,.28), rgba(255,107,74,0))"}} />
+      {/* price stays flat */}
+      <div style={{position: "absolute", left: 100, right: 100, top: 760, height: 3, background: "rgba(255,255,255,.35)", opacity: p(f, 4, 14)}} />
+      <div style={{position: "absolute", left: 100, top: 700, fontFamily: MONO, fontWeight: 700, fontSize: 26, letterSpacing: 3, color: "rgba(255,255,255,.55)", opacity: p(f, 6, 16)}}>
+        PRICE · STILL FLAT
+      </div>
+      {/* volume bars */}
+      {HOOK_BARS.map((b, i) => {
+        const isS = i === 7;
+        const rise = p(f, 2 + i * 1.5, 18 + i * 1.5);
+        const h = (isS ? b + (1 - b) * sc : b) * maxH * rise;
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: 119 + i * 78,
+              width: 62,
+              height: h,
+              top: base - h,
+              borderRadius: 14,
+              background: isS ? C.coral : "rgba(255,255,255,.22)",
+              boxShadow: isS ? `0 0 ${60 * sc}px ${C.coral}` : "none",
+            }}
+          />
+        );
+      })}
+      <div style={{position: "absolute", left: 119 + 7 * 78 - 90, width: 242, top: base - maxH - 150, textAlign: "center", fontFamily: SANS, fontWeight: 800, color: reveal < 0.5 ? C.white : C.coral, fontSize: reveal < 0.5 ? 150 : 130, letterSpacing: -4, opacity: p(f, 30, 38), transform: `scale(${(reveal < 0.5 ? 1 : 1 + 0.1 * (1 - reveal)) * pulse})`}}>
+        {reveal < 0.5 ? "?" : "6.2×"}
+      </div>
+      <div style={{position: "absolute", left: 100, top: base + 30, fontFamily: MONO, fontWeight: 700, fontSize: 26, letterSpacing: 3, color: "rgba(255,255,255,.55)"}}>VOLUME</div>
     </AbsoluteFill>
   );
 };
 
-/** The "quiet bars → one spikes → 6×" icon. */
-const SpikeIcon: React.FC<{
-  size: number;
-  start?: number;
-  loop?: number;
-  base?: string;
-  hi?: string;
-  tile?: string;
-  badgeBg?: string;
-  badgeFg?: string;
-}> = ({
-  size,
-  start = 0,
-  loop = 100,
-  base = "rgba(42,59,255,.45)",
-  hi = C.green,
-  tile = "rgba(42,59,255,.12)",
-  badgeBg = C.green,
-  badgeFg = "#fff",
-}) => {
-  const f = useCurrentFrame();
-  const g = Math.max(0, f - start);
-  const t = (g % loop) / loop;
-  const up = p(t, 0.1, 0.4, Easing.out(Easing.back(2)));
-  const badge = p(t, 0.4, 0.55, Easing.out(Easing.back(2)));
-  const out = 1 - p(t, 0.9, 1);
-  const bars = [0.35, 0.5, 0.4, 0.45, 0.38];
-  return (
-    <div style={{position: "relative", width: size, height: size}}>
-      <div
-        style={{
-          width: size,
-          height: size,
-          boxSizing: "border-box",
-          borderRadius: size * 0.28,
-          background: tile,
-          padding: size * 0.18,
-          display: "flex",
-          alignItems: "flex-end",
-          gap: size * 0.03,
-          opacity: out,
-        }}
-      >
-        {bars.map((b, i) => {
-          const h = i === 2 ? b + (1 - b) * up : b;
-          return (
-            <div
-              key={i}
-              style={{
-                flex: 1,
-                height: `${h * 100}%`,
-                borderRadius: size * 0.04,
-                background: i === 2 ? interpolateColors(Math.max(0, Math.min(1, up)), [0, 1], [base, hi]) : base,
-              }}
-            />
-          );
-        })}
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          top: -size * 0.12,
-          right: -size * 0.2,
-          padding: `${size * 0.03}px ${size * 0.09}px`,
-          background: badgeBg,
-          borderRadius: size * 0.14,
-          color: badgeFg,
-          fontFamily: UI,
-          fontWeight: 800,
-          fontSize: size * 0.26,
-          transform: `scale(${badge * out})`,
-        }}
-      >
-        6×
-      </div>
-    </div>
-  );
-};
-
-const Pill: React.FC<{text: string; bg: string; color: string; style?: React.CSSProperties}> = ({
-  text,
-  bg,
-  color,
-  style,
-}) => (
-  <div
-    style={{
-      padding: "6px 12px",
-      borderRadius: 999,
-      background: bg,
-      color,
-      fontSize: 12,
-      fontWeight: 700,
-      whiteSpace: "nowrap",
-      ...style,
-    }}
-  >
-    {text}
-  </div>
-);
-
-/* ------------------------------------------------------------------ */
-/*  Phone mockup                                                       */
-/* ------------------------------------------------------------------ */
-const PW = 390;
-const PH = 820;
-const BZ = 14;
-const PHONE_LEFT = (config.width - (PW + BZ * 2)) / 2;
-const PHONE_TOP = 580;
-
-const StatusBar: React.FC = () => (
-  <div style={{position: "absolute", top: 0, left: 0, right: 0, height: 54, zIndex: 25, pointerEvents: "none"}}>
-    <div style={{position: "absolute", left: 34, top: 16, fontSize: 16, fontWeight: 700}}>9:41</div>
-    <div
-      style={{
-        position: "absolute",
-        left: "50%",
-        top: 12,
-        width: 104,
-        height: 30,
-        marginLeft: -52,
-        borderRadius: 20,
-        background: "#05070F",
-      }}
-    />
-    <div
-      style={{
-        position: "absolute",
-        right: 30,
-        top: 16,
-        fontSize: 14,
-        fontWeight: 700,
-        display: "flex",
-        gap: 6,
-        alignItems: "center",
-      }}
-    >
-      5G
-      <span
-        style={{
-          width: 24,
-          height: 12,
-          borderRadius: 4,
-          border: `2px solid ${C.ink}`,
-          boxSizing: "border-box",
-          position: "relative",
-          display: "inline-block",
-        }}
-      >
-        <span style={{position: "absolute", top: 1.5, left: 1.5, bottom: 1.5, right: 5, background: C.ink, borderRadius: 1.5}} />
-      </span>
-    </div>
-  </div>
-);
-
-const PhoneShell: React.FC<{children: React.ReactNode; scale?: number}> = ({children, scale = 1.06}) => (
-  <div
-    style={{
-      width: PW + BZ * 2,
-      height: PH + BZ * 2,
-      padding: BZ,
-      boxSizing: "border-box",
-      borderRadius: 68,
-      background: "#05070F",
-      boxShadow: "0 60px 110px rgba(0,0,0,.45), inset 0 0 0 2px #2B3254",
-      transform: `scale(${scale})`,
-      transformOrigin: "50% 0%",
-    }}
-  >
-    <div
-      style={{
-        position: "relative",
-        width: PW,
-        height: PH,
-        borderRadius: 54,
-        overflow: "hidden",
-        background: C.paper,
-        fontFamily: UI,
-        color: C.ink,
-      }}
-    >
-      {children}
-      <StatusBar />
-    </div>
-  </div>
-);
-
-/** Finger / tap indicator. Coordinates are inside the phone screen. */
-const Finger: React.FC<{
-  T: number[];
-  X: number[];
-  Y: number[];
-  taps: number[];
-  show: [number, number][];
-}> = ({T, X, Y, taps, show}) => {
-  const f = useCurrentFrame();
-  const x = interpolate(f, T, X, {...clampX, easing: INOUT});
-  const y = interpolate(f, T, Y, {...clampX, easing: INOUT});
-  const win = (a: number, b: number) => p(f, a, a + 6) * (1 - p(f, b - 6, b));
-  const opacity = Math.max(...show.map(([a, b]) => win(a, b)));
-  const press = Math.max(
-    ...taps.map((t) => {
-      const d = f - t;
-      return d < 0 || d > 10 ? 0 : Math.sin((d / 10) * Math.PI);
-    }),
-  );
-  return (
-    <div style={{position: "absolute", inset: 0, zIndex: 40, pointerEvents: "none"}}>
-      {taps.map((t) => {
-        const d = f - t;
-        if (d < 0 || d > 18) return null;
-        const size = 40 + d * 6;
-        return (
-          <div
-            key={t}
-            style={{
-              position: "absolute",
-              left: x - size / 2,
-              top: y - size / 2,
-              width: size,
-              height: size,
-              borderRadius: "50%",
-              border: `3px solid ${C.cobalt}`,
-              opacity: (1 - d / 18) * 0.7,
-            }}
-          />
-        );
-      })}
-      <div
-        style={{
-          position: "absolute",
-          left: x - 29,
-          top: y - 29,
-          width: 58,
-          height: 58,
-          borderRadius: "50%",
-          background: "rgba(11,16,32,.30)",
-          border: "3px solid rgba(255,255,255,.92)",
-          boxSizing: "border-box",
-          opacity,
-          transform: `scale(${1 - 0.22 * press})`,
-        }}
-      />
-    </div>
-  );
-};
-
-/* ------------------------------------------------------------------ */
-/*  Shared stock row data                                              */
-/* ------------------------------------------------------------------ */
-type Row = {t: string; r: number; up: boolean; sub: string; price: number; pct: number};
-
-const fmtPct = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
-
-/** Big card used on the cobalt/sun scenes (outside the phone). */
-const BigRow: React.FC<{d: Row; top: number; at: number}> = ({d, top, at}) => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
-  const s = spring({frame: f - at, fps, config: BOUNCY});
-  const col = d.up ? C.green : C.red;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: SAFE.left,
-        top,
-        width: SAFE.w,
-        boxSizing: "border-box",
-        padding: "30px 34px",
-        borderRadius: 40,
-        background: C.white,
-        display: "flex",
-        alignItems: "center",
-        gap: 26,
-        boxShadow: "0 24px 50px rgba(11,16,32,.18)",
-        opacity: Math.min(1, s * 2),
-        transform: `translateY(${(1 - s) * 120}px) scale(${0.92 + 0.08 * s})`,
-      }}
-    >
-      <div
-        style={{
-          width: 104,
-          height: 104,
-          borderRadius: 28,
-          background: `${col}22`,
-          color: col,
-          fontFamily: DISPLAY,
-          fontWeight: 800,
-          fontSize: 54,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
-      >
-        {d.t[0]}
-      </div>
-      <div style={{flex: 1, minWidth: 0}}>
-        <div style={{display: "flex", alignItems: "center", gap: 16}}>
-          <span style={{fontFamily: UI, fontWeight: 800, fontSize: 48, color: C.ink}}>{d.t}</span>
-          <span
-            style={{
-              fontFamily: UI,
-              fontWeight: 800,
-              fontSize: 34,
-              color: col,
-              background: `${col}22`,
-              borderRadius: 14,
-              padding: "4px 14px",
-            }}
-          >
-            {d.up ? "▲" : "▼"} {d.r.toFixed(1)}×
-          </span>
-        </div>
-        <div style={{fontFamily: UI, fontWeight: 600, fontSize: 30, color: C.mute, marginTop: 6}}>{d.sub}</div>
-      </div>
-      <div style={{textAlign: "right", fontFamily: UI}}>
-        <div style={{fontWeight: 800, fontSize: 46, color: C.ink}}>₹{fmtIN(d.price, 2)}</div>
-        <div style={{fontWeight: 800, fontSize: 36, color: col, marginTop: 2}}>{fmtPct(d.pct)}</div>
-      </div>
-    </div>
-  );
-};
-
-const Tag: React.FC<{text: string; bg: string; fg?: string; top: number; at: number}> = ({
-  text,
-  bg,
-  fg = C.white,
-  top,
-  at,
-}) => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
-  const s = spring({frame: f - at, fps, config: SOFT});
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: SAFE.left + 8,
-        top,
-        padding: "10px 26px",
-        borderRadius: 999,
-        background: bg,
-        color: fg,
-        fontFamily: UI,
-        fontWeight: 800,
-        fontSize: 30,
-        letterSpacing: 1.5,
-        opacity: s,
-        transform: `translateX(${(1 - s) * -60}px)`,
-      }}
-    >
-      {text}
-    </div>
-  );
-};
-
-/* ------------------------------------------------------------------ */
-/*  SCENE 1 — Hook: the crowd arrives first                            */
-/* ------------------------------------------------------------------ */
-const CX = config.width / 2;
-const CY = 1190;
-const RUSH = 64;
-
-const Hook: React.FC = () => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
-  const pop = spring({frame: f - 12, fps, config: BOUNCY});
-  const pulse = f < 56 ? 0 : Math.max(0, Math.sin(((f - 56) / 14) * Math.PI)) * (f < 98 ? 1 : 0);
-
-  return (
-    <>
-      <Band top={SAFE.y0}>
-        <div style={{position: "relative", width: config.width, height: 360}}>
-          <Stack>
-            <Rise lines={["The price", "moves last."]} at={6} out={50} size={112} color={C.paper} />
-          </Stack>
-          <Stack>
-            <Rise lines={["The crowd", "moves first."]} colors={[C.paper, C.sun]} at={56} size={116} />
-          </Stack>
-        </div>
-      </Band>
-
-      {/* quiet phase: a few people wander near the stock */}
-      {Array.from({length: 6}, (_, i) => {
-        const a = (i / 6) * Math.PI * 2 + 0.3;
-        const bob = Math.sin((f + i * 17) / 14) * 7;
-        return (
-          <div
-            key={`q${i}`}
-            style={{
-              position: "absolute",
-              left: CX + Math.cos(a) * 240 - 13,
-              top: CY + Math.sin(a) * 190 + bob - 13,
-              width: 26,
-              height: 26,
-              borderRadius: 13,
-              background: C.paper,
-              opacity: 0.8 * p(f, 12 + i * 3, 22 + i * 3),
-            }}
-          />
-        );
-      })}
-
-      {/* rush phase: the crowd floods in */}
-      {Array.from({length: RUSH}, (_, i) => {
-        const a = hash(i + 3) * Math.PI * 2;
-        const b = hash(i + 51) * Math.PI * 2;
-        const sR = 1100 + hash(i + 9) * 300;
-        const eR = 210 + hash(i + 21) * 150;
-        const d0 = 58 + hash(i + 40) * 26;
-        const t = p(f, d0, d0 + 26, Easing.out(Easing.cubic));
-        const sx = CX + Math.cos(a) * sR;
-        const sy = CY + Math.sin(a) * sR * 0.55;
-        const ex = CX + Math.cos(b) * eR;
-        const ey = CY + Math.sin(b) * eR * 0.75;
-        const size = 22 + hash(i + 70) * 12;
-        return (
-          <div
-            key={`r${i}`}
-            style={{
-              position: "absolute",
-              left: sx + (ex - sx) * t - size / 2,
-              top: sy + (ey - sy) * t - size / 2,
-              width: size,
-              height: size,
-              borderRadius: size / 2,
-              background: i % 7 === 0 ? C.sun : C.paper,
-              opacity: Math.min(1, t * 5) * 0.95,
-            }}
-          />
-        );
-      })}
-
-      <div
-        style={{
-          position: "absolute",
-          left: CX - 100,
-          top: CY - 100,
-          transform: `scale(${(0.5 + 0.5 * pop) * (1 + 0.06 * pulse)})`,
-          opacity: p(f, 12, 18),
-        }}
-      >
-        <SpikeIcon
-          size={200}
-          start={56}
-          loop={140}
-          base="rgba(255,255,255,.55)"
-          hi={C.sun}
-          tile="rgba(255,255,255,.16)"
-          badgeBg={C.sun}
-          badgeFg={C.ink}
-        />
-      </div>
-    </>
-  );
-};
-
-/* ------------------------------------------------------------------ */
-/*  SCENE 2 — The idea: volume = crowd size                            */
-/* ------------------------------------------------------------------ */
+/* ============ HERO · Bars (76–152): the answer ============ */
 const BARS = [0.34, 0.42, 0.36, 0.46, 0.4, 0.38, 0.44, 0.35, 0.41, 0.37, 0.43, 0.39];
-const SPIKE_I = 8;
-const CH_H = 400;
-
-const Idea: React.FC = () => {
+const CH = 440;
+const Bars: React.FC = () => {
   const f = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const spike = p(f, 100, 134, Easing.out(Easing.back(1.4)));
-  const ratio = (1 + 5.2 * Math.max(0, Math.min(1, spike))).toFixed(1);
-  const stamp = spring({frame: f - 142, fps, config: BOUNCY});
-  const card = spring({frame: f - 14, fps, config: SOFT});
-
+  const spike = p(f, 20, 46, Easing.out(Easing.back(1.4)));
+  const sc = Math.max(0, Math.min(1, spike));
+  const stamp = spring({frame: f - 44, fps, config: BOUNCY});
   return (
-    <>
-      <Band top={SAFE.y0}>
-        <div style={{position: "relative", width: config.width, height: 290}}>
-          <Stack>
-            <Rise lines={["Volume = how many", "people are trading."]} at={6} out={84} size={80} color={C.ink} />
-          </Stack>
-          <Stack>
-            <Rise lines={["Then suddenly,", "everyone shows up."]} colors={[C.ink, C.cobalt]} at={92} size={90} />
-          </Stack>
-        </div>
-      </Band>
-
-      <div
-        style={{
-          position: "absolute",
-          left: SAFE.left,
-          top: 690,
-          width: SAFE.w,
-          boxSizing: "border-box",
-          padding: "34px 36px 30px",
-          borderRadius: 44,
-          background: C.white,
-          border: `2px solid ${C.line}`,
-          boxShadow: "0 30px 70px rgba(42,59,255,.12)",
-          opacity: Math.min(1, card * 2),
-          transform: `translateY(${(1 - card) * 80}px)`,
-        }}
-      >
-        <div style={{display: "flex", alignItems: "baseline", justifyContent: "space-between", fontFamily: UI}}>
-          <span style={{fontWeight: 800, fontSize: 40}}>RELIANCE</span>
-          <span style={{fontWeight: 600, fontSize: 28, color: C.mute}}>today</span>
-        </div>
-
-        <div style={{position: "relative", height: CH_H + 90, marginTop: 8}}>
-          <div style={{position: "absolute", left: 0, right: 0, bottom: CH_H * 0.52, borderTop: `3px dashed ${C.mute}66`}} />
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              bottom: CH_H * 0.52 + 10,
-              fontFamily: UI,
-              fontSize: 26,
-              fontWeight: 700,
-              color: C.mute,
-            }}
-          >
-            usual
-          </div>
-
-          <div style={{position: "absolute", left: 0, right: 0, bottom: 0, height: CH_H, display: "flex", alignItems: "flex-end", gap: 12}}>
-            {BARS.map((b, i) => {
-              const rise = p(f, 8 + i * 3, 32 + i * 3);
-              const isS = i === SPIKE_I;
-              const h = isS ? (b + (0.95 - b) * spike) * rise : b * rise;
-              return (
-                <div key={i} style={{flex: 1, height: "100%", position: "relative"}}>
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: h * CH_H,
-                      borderRadius: 12,
-                      background: isS
-                        ? interpolateColors(Math.max(0, Math.min(1, spike)), [0, 1], ["#C9CFE6", C.green])
-                        : "#C9CFE6",
-                    }}
-                  />
-                  {isS && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: h * CH_H + 12,
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        whiteSpace: "nowrap",
-                        fontFamily: DISPLAY,
-                        fontWeight: 800,
-                        fontSize: 64,
-                        letterSpacing: -2,
-                        color: C.green,
-                        opacity: Math.max(0, Math.min(1, spike)),
-                      }}
-                    >
-                      {ratio}×
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <div
-            style={{
-              position: "absolute",
-              left: 6,
-              top: 14,
-              padding: "12px 24px",
-              borderRadius: 16,
-              background: C.sun,
-              color: C.ink,
-              fontFamily: UI,
-              fontWeight: 800,
-              fontSize: 36,
-              letterSpacing: 1,
-              opacity: Math.min(1, stamp * 2),
-              transform: `rotate(-6deg) scale(${stamp})`,
-              transformOrigin: "0% 50%",
-            }}
-          >
-            VOLUME JUMP
-          </div>
-        </div>
-
-        <div style={{fontFamily: UI, fontWeight: 600, fontSize: 28, color: C.mute, textAlign: "center"}}>
-          Each bar = a few minutes of trading
-        </div>
+    <div style={{...card, padding: "36px 40px 32px", fontFamily: SANS, position: "relative"}}>
+      <div style={{display: "flex", justifyContent: "space-between", alignItems: "baseline"}}>
+        <span style={{fontWeight: 800, fontSize: 42}}>RELIANCE</span>
+        <Label t="TODAY · 5-MIN BARS" />
       </div>
-    </>
-  );
-};
-
-/* ------------------------------------------------------------------ */
-/*  SCENE 3 — Direction: buyers or sellers?                            */
-/* ------------------------------------------------------------------ */
-const UP_ROW: Row = {t: "RELIANCE", r: 6.2, up: true, sub: "10:42 AM", price: 2948, pct: 2.4};
-const DN_ROW: Row = {t: "TATASTEEL", r: 7.8, up: false, sub: "11:15 AM", price: 138.2, pct: -1.9};
-
-const Direction: React.FC = () => (
-  <>
-    <Band top={SAFE.y0}>
-      <Rise lines={["Which way", "did it go?"]} at={6} size={104} color={C.ink} />
-    </Band>
-
-    <Tag text="RISING · BUYERS RUSHING IN" bg={C.green} top={600} at={22} />
-    <BigRow d={UP_ROW} top={670} at={26} />
-
-    <Tag text="FALLING · SELLERS RUSHING OUT" bg={C.red} top={960} at={52} />
-    <BigRow d={DN_ROW} top={1030} at={56} />
-
-    <Band top={1330}>
-      <Rise lines={["Bigger × = bigger rush."]} at={80} size={60} color={C.ink} weight={700} />
-    </Band>
-  </>
-);
-
-/* ------------------------------------------------------------------ */
-/*  SCENE 4 — In the app (phone)                                       */
-/* ------------------------------------------------------------------ */
-const ROWH = 74;
-
-const NEW_ROW: Row = {t: "RELIANCE", r: 6.2, up: true, sub: "2:11 PM · just now", price: 2948, pct: 2.4};
-const FEED: Row[] = [
-  {t: "ICICIBANK", r: 5.4, up: true, sub: "2:05 PM · 3 min ago", price: 1312.4, pct: 1.8},
-  {t: "SBIN", r: 6.9, up: false, sub: "1:58 PM · 10 min ago", price: 812.15, pct: -1.4},
-  {t: "INFY", r: 5.1, up: true, sub: "1:40 PM · 28 min ago", price: 1884, pct: 2.1},
-];
-
-const MiniRow: React.FC<{d: Row; top: number; bg?: string; opacity?: number; h?: number}> = ({
-  d,
-  top,
-  bg = "transparent",
-  opacity = 1,
-  h = ROWH,
-}) => {
-  const col = d.up ? C.green : C.red;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: 0,
-        right: 0,
-        top,
-        height: h,
-        boxSizing: "border-box",
-        padding: "0 16px",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        background: bg,
-        opacity,
-      }}
-    >
-      <div
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 11,
-          background: `${col}22`,
-          color: col,
-          fontWeight: 800,
-          fontSize: 17,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
-      >
-        {d.t[0]}
-      </div>
-      <div style={{flex: 1, minWidth: 0}}>
-        <div style={{display: "flex", alignItems: "center", gap: 7}}>
-          <span style={{fontSize: 15, fontWeight: 800}}>{d.t}</span>
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 800,
-              color: col,
-              background: `${col}22`,
-              borderRadius: 6,
-              padding: "2px 6px",
-            }}
-          >
-            {d.up ? "▲" : "▼"} {d.r.toFixed(1)}×
-          </span>
-        </div>
-        <div style={{fontSize: 11.5, color: C.mute, fontWeight: 500, marginTop: 3}}>{d.sub}</div>
-      </div>
-      <div style={{textAlign: "right"}}>
-        <div style={{fontSize: 14, fontWeight: 800}}>₹{fmtIN(d.price, 2)}</div>
-        <div style={{fontSize: 12, fontWeight: 700, color: col, marginTop: 2}}>{fmtPct(d.pct)}</div>
-      </div>
-    </div>
-  );
-};
-
-const LiveDot: React.FC = () => {
-  const f = useCurrentFrame();
-  const q = 0.4 + 0.6 * (1 - Math.abs(((f % 48) / 48) * 2 - 1));
-  return (
-    <div
-      style={{
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        background: C.green,
-        boxShadow: `0 0 ${8 * q}px ${3 * q}px ${C.green}88`,
-      }}
-    />
-  );
-};
-
-const HomeScreen: React.FC = () => {
-  const f = useCurrentFrame();
-  const s = p(f, 54, 72, INOUT);
-  const glow = 1 - p(f, 72, 104);
-  const all: Row[] = [NEW_ROW, ...FEED];
-  return (
-    <div style={{position: "absolute", inset: 0, background: C.paper}}>
-      <div style={{position: "absolute", left: 24, top: 66, fontSize: 28, fontWeight: 800}}>Home</div>
-      <Img src={LOGO} style={{position: "absolute", right: 22, top: 66, width: 38, height: 38, borderRadius: 10, objectFit: "contain"}} />
-
-      {/* the Volume Jumps card */}
-      <div
-        style={{
-          position: "absolute",
-          left: 14,
-          right: 14,
-          top: 118,
-          height: 64 + ROWH * 3,
-          borderRadius: 24,
-          background: C.white,
-          border: `1.5px solid ${C.line}`,
-          overflow: "hidden",
-        }}
-      >
-        <div style={{position: "absolute", left: 14, top: 12, width: 40, height: 40}}>
-          <SpikeIcon size={40} />
-        </div>
-        <div style={{position: "absolute", left: 66, top: 11, fontSize: 16, fontWeight: 800}}>Volume Jumps</div>
-        <div style={{position: "absolute", left: 66, top: 36, display: "flex", alignItems: "center", gap: 6}}>
-          <LiveDot />
-          <span style={{fontSize: 11.5, color: C.mute, fontWeight: 500}}>Sudden volume stocks</span>
-        </div>
-        <div style={{position: "absolute", right: 16, top: 22, fontSize: 13, fontWeight: 800, color: C.cobalt}}>View all</div>
-        <div style={{position: "absolute", left: 0, right: 0, top: 63, height: 1.5, background: C.line}} />
-
-        <div style={{position: "absolute", left: 0, right: 0, top: 64, height: ROWH * 3, overflow: "hidden"}}>
-          {all.map((d, k) => {
-            const y = (k - 1 + s) * ROWH;
-            const isNew = k === 0;
-            const isLast = k === 3;
+      <div style={{position: "relative", height: CH + 100, marginTop: 10}}>
+        <div style={{position: "absolute", left: 0, right: 0, bottom: CH * 0.52, borderTop: `3px dashed ${C.mute}88`}} />
+        <Label t="NORMAL" style={{position: "absolute", left: 0, bottom: CH * 0.52 + 12}} />
+        <div style={{position: "absolute", left: 0, right: 0, bottom: 0, height: CH, display: "flex", alignItems: "flex-end", gap: 12}}>
+          {BARS.map((b, i) => {
+            const rise = p(f, i * 1.5, 16 + i * 1.5);
+            const isS = i === 8;
+            const h = (isS ? b + (0.95 - b) * sc : b) * rise;
             return (
-              <React.Fragment key={d.t}>
-                <MiniRow
-                  d={d}
-                  top={y}
-                  opacity={isNew ? s : isLast ? 1 - s : 1}
-                  bg={isNew ? `rgba(18,183,106,${0.14 * glow})` : "transparent"}
-                />
-                {!isLast && (
-                  <div style={{position: "absolute", left: 16, right: 16, top: y + ROWH - 1, height: 1.5, background: C.line}} />
+              <div key={i} style={{flex: 1, position: "relative", height: "100%"}}>
+                <div style={{position: "absolute", bottom: 0, left: 0, right: 0, height: h * CH, borderRadius: 12, background: isS && sc > 0.3 ? C.coral : "#CFD6DD"}} />
+                {isS && (
+                  <div style={{position: "absolute", bottom: h * CH + 12, left: "50%", transform: "translateX(-50%)", fontWeight: 800, fontSize: 64, letterSpacing: -2, color: C.coral, opacity: sc, whiteSpace: "nowrap"}}>
+                    {(1 + 5.2 * sc).toFixed(1)}×
+                  </div>
                 )}
-              </React.Fragment>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* placeholder content below, so it feels like a real home screen */}
-      {[0, 1].map((i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            left: 14,
-            right: 14,
-            top: 420 + i * 126,
-            height: 108,
-            borderRadius: 22,
-            background: C.white,
-            border: `1.5px solid ${C.line}`,
-          }}
-        >
-          <div style={{position: "absolute", left: 18, top: 20, width: 120, height: 14, borderRadius: 7, background: C.line}} />
-          <div style={{position: "absolute", left: 18, top: 48, width: 250, height: 11, borderRadius: 6, background: "#EEF1F8"}} />
-          <div style={{position: "absolute", left: 18, top: 70, width: 190, height: 11, borderRadius: 6, background: "#EEF1F8"}} />
-        </div>
-      ))}
-
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: 84,
-          background: C.white,
-          borderTop: `1.5px solid ${C.line}`,
-          display: "flex",
-          justifyContent: "space-around",
-          paddingTop: 14,
-        }}
-      >
-        {["Home", "Stocks", "Learn", "More"].map((l, i) => (
-          <div key={l} style={{display: "flex", flexDirection: "column", alignItems: "center", gap: 6}}>
-            <div style={{width: 22, height: 22, borderRadius: 7, background: i === 0 ? C.cobalt : "#CBD1E4"}} />
-            <div style={{fontSize: 12, fontWeight: 700, color: i === 0 ? C.cobalt : C.mute}}>{l}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const STD_ROWS: Row[] = [
-  {t: "WELCORP", r: 7.4, up: true, sub: "Spotted at 9:48 AM", price: 812.4, pct: 2.4},
-  {t: "RELIANCE", r: 6.2, up: true, sub: "Spotted at 10:42 AM", price: 2948, pct: 1.4},
-  {t: "SBIN", r: 6.9, up: false, sub: "Spotted at 11:20 AM", price: 812.15, pct: -1.4},
-];
-const STRICT_ROWS: Row[] = [
-  {t: "WELCORP", r: 9.1, up: true, sub: "Spotted at 9:48 AM", price: 812.4, pct: 2.4},
-  {t: "SBIN", r: 8.3, up: false, sub: "Spotted at 11:20 AM", price: 812.15, pct: -1.4},
-];
-const SENS = ["Relaxed", "Standard", "Strict"];
-const SEG_W = 100;
-const SEG_X = 16;
-
-const HistoryScreen: React.FC = () => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
-  const d = p(f, 106, 132);
-  const changed = f >= 196;
-  const count = changed ? 5 : 12;
-  const pop = changed ? spring({frame: f - 196, fps, config: BOUNCY}) : 1;
-  const sw = p(f, 196, 210);
-  const thumb = interpolate(f, [0, 192, 206], [1, 1, 2], {...clampX, easing: INOUT});
-  return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        background: C.paper,
-        transform: `translateX(${(1 - d) * PW}px)`,
-        boxShadow: "-20px 0 40px rgba(0,0,0,.12)",
-      }}
-    >
-      <div style={{position: "absolute", left: 18, top: 60, fontSize: 34, fontWeight: 500, color: C.mute}}>‹</div>
-      <div style={{position: "absolute", left: 52, top: 66, fontSize: 20, fontWeight: 800}}>Volume Jump</div>
-
-      <div
-        style={{
-          position: "absolute",
-          left: 14,
-          right: 14,
-          top: 108,
-          height: 62,
-          borderRadius: 18,
-          background: C.white,
-          border: `1.5px solid ${C.line}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 20px",
-          fontSize: 18,
-          fontWeight: 800,
-        }}
-      >
-        <span style={{color: C.mute, fontSize: 24}}>‹</span>
-        <span>Thu, 12 Nov 2026</span>
-        <span style={{color: C.mute, fontSize: 24}}>›</span>
-      </div>
-
-      <div style={{position: "absolute", left: 22, top: 190, display: "flex", alignItems: "baseline", gap: 10}}>
-        <span
-          style={{
-            fontFamily: DISPLAY,
-            fontWeight: 800,
-            fontSize: 58,
-            lineHeight: 1,
-            letterSpacing: -2,
-            color: C.cobalt,
-            display: "inline-block",
-            transform: `scale(${0.75 + 0.25 * pop})`,
-            transformOrigin: "0% 100%",
-          }}
-        >
-          {count}
-        </span>
-        <span style={{fontSize: 19, fontWeight: 700}}>stocks had a rush</span>
-      </div>
-
-      <div style={{position: "absolute", left: 14, right: 14, top: 272, height: 3 * 76}}>
-        {STD_ROWS.map((r, i) => (
-          <div
-            key={r.t}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: i * 78,
-              height: 70,
-              borderRadius: 18,
-              background: C.white,
-              border: `1.5px solid ${C.line}`,
-              opacity: 1 - sw,
-              overflow: "hidden",
-            }}
-          >
-            <MiniRow d={r} top={0} h={67} />
-          </div>
-        ))}
-        {STRICT_ROWS.map((r, i) => (
-          <div
-            key={r.t}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: i * 78,
-              height: 70,
-              borderRadius: 18,
-              background: C.white,
-              border: `1.5px solid ${C.line}`,
-              opacity: sw,
-              overflow: "hidden",
-            }}
-          >
-            <MiniRow d={r} top={0} h={67} />
-          </div>
-        ))}
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          left: 14,
-          right: 14,
-          top: 548,
-          borderRadius: 18,
-          background: "rgba(42,59,255,.08)",
-          padding: "14px 16px",
-          boxSizing: "border-box",
-        }}
-      >
-        <div style={{fontSize: 14, fontWeight: 800, color: C.cobalt}}>Tip</div>
-        <div style={{fontSize: 14.5, fontWeight: 500, color: C.mute, marginTop: 3, lineHeight: 1.35}}>
-          Strict shows fewer, bigger rushes. Relaxed shows more.
-        </div>
-      </div>
-
-      {/* sensitivity bar */}
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: 130,
-          background: C.white,
-          borderTop: `1.5px solid ${C.line}`,
-        }}
-      >
-        <div style={{position: "absolute", left: 18, top: 14, fontSize: 11, letterSpacing: 1.2, fontWeight: 800, color: C.mute}}>
-          SENSITIVITY
-        </div>
-        <div
-          style={{
-            position: "absolute",
-            left: SEG_X,
-            top: 36,
-            width: SEG_W * 3,
-            height: 48,
-            borderRadius: 999,
-            border: `1.5px solid ${C.line}`,
-            boxSizing: "border-box",
-            background: C.paper,
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              top: 3,
-              left: 3 + thumb * ((SEG_W * 3 - 6) / 3),
-              width: (SEG_W * 3 - 6) / 3,
-              height: 39,
-              borderRadius: 999,
-              background: C.cobalt,
-            }}
-          />
-          {SENS.map((s, i) => (
-            <div
-              key={s}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: i * SEG_W,
-                width: SEG_W,
-                height: 45,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 14,
-                fontWeight: 800,
-                color: Math.round(thumb) === i ? C.white : C.mute,
-              }}
-            >
-              {s}
-            </div>
-          ))}
-        </div>
-        <svg
-          width={26}
-          height={26}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={C.cobalt}
-          strokeWidth={2.2}
-          strokeLinecap="round"
-          style={{position: "absolute", right: 22, top: 47}}
-        >
-          <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
-          <circle cx={15} cy={7} r={2} />
-          <circle cx={9} cy={17} r={2} />
-        </svg>
-      </div>
-    </div>
-  );
-};
-
-const InApp: React.FC = () => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
-  const rise = spring({frame: f - 6, fps, config: PHONE_IN});
-
-  return (
-    <>
-      <div
-        style={{
-          position: "absolute",
-          left: -100,
-          top: 640,
-          width: 1280,
-          height: 1280,
-          background: "radial-gradient(closest-side, rgba(42,59,255,.55), rgba(42,59,255,0))",
-        }}
-      />
-
-      <Band top={SAFE.y0}>
-        <div style={{position: "relative", width: config.width, height: 290}}>
-          <Stack>
-            <Rise lines={["Spot them", "as they happen."]} at={14} out={96} size={92} color={C.paper} />
-          </Stack>
-          <Stack>
-            <Rise lines={["Replay any", "past day."]} at={112} out={176} size={96} color={C.paper} />
-          </Stack>
-          <Stack>
-            <Rise lines={["Strict or relaxed?", "Your call."]} colors={[C.paper, C.sun]} at={184} size={88} />
-          </Stack>
-        </div>
-      </Band>
-
-      <div
-        style={{
-          position: "absolute",
-          left: PHONE_LEFT,
-          top: PHONE_TOP,
-          transform: `translateY(${(1 - rise) * 1000}px)`,
-        }}
-      >
-        <PhoneShell>
-          <HomeScreen />
-          <HistoryScreen />
-          <Finger
-            T={[80, 98, 114, 176, 190, 212]}
-            X={[330, 342, 310, 320, 266, 266]}
-            Y={[560, 150, 300, 640, 748 + 0, 748]}
-            taps={[100, 192]}
-            show={[
-              [82, 114],
-              [178, 214],
-            ]}
-          />
-        </PhoneShell>
-      </div>
-    </>
-  );
-};
-
-/* ------------------------------------------------------------------ */
-/*  SCENE 5 — Coming soon: your own alert number                       */
-/* ------------------------------------------------------------------ */
-const CHIPS = [8, 15, 30];
-
-const Notif: React.FC<{at: number; top: number; title: string; sub: string}> = ({at, top, title, sub}) => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
-  const s = spring({frame: f - at, fps, config: {damping: 14, stiffness: 140, mass: 0.8}});
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: SAFE.left,
-        top,
-        width: SAFE.w,
-        boxSizing: "border-box",
-        padding: "26px 30px",
-        borderRadius: 38,
-        background: C.white,
-        boxShadow: "0 26px 60px rgba(5,7,15,.35)",
-        display: "flex",
-        alignItems: "center",
-        gap: 24,
-        opacity: Math.min(1, s * 3),
-        transform: `translateY(${(1 - s) * -170}px)`,
-      }}
-    >
-      <Img src={LOGO} style={{width: 92, height: 92, borderRadius: 24, objectFit: "contain", flexShrink: 0}} />
-      <div style={{flex: 1, minWidth: 0, fontFamily: UI}}>
-        <div style={{display: "flex", justifyContent: "space-between", fontSize: 24, fontWeight: 700, color: C.mute}}>
-          <span>OPTIONXI</span>
-          <span>now</span>
-        </div>
-        <div style={{fontSize: 37, fontWeight: 800, color: C.ink, marginTop: 4, whiteSpace: "nowrap"}}>{title}</div>
-        <div style={{fontSize: 30, fontWeight: 600, color: C.mute, marginTop: 4}}>{sub}</div>
-      </div>
-    </div>
-  );
-};
-
-const Alerts: React.FC = () => {
-  const f = useCurrentFrame();
-  const {fps} = useVideoConfig();
-  const card = spring({frame: f - 16, fps, config: SOFT});
-  const sel = f < 74 ? 0 : 2;
-  const selAt = f < 74 ? 20 : 74;
-  const chipPop = spring({frame: f - selAt, fps, config: BOUNCY});
-  const k = f < 84 ? Math.max(0, f - 44) : f - 88;
-  const ring = (f >= 44 && f < 74) || f >= 88 ? Math.sin(k * 1.6) * 20 * Math.exp(-k / 9) : 0;
-
-  return (
-    <>
-      <Band top={SAFE.y0}>
-        <div
-          style={{
-            padding: "12px 34px",
-            borderRadius: 999,
-            background: C.sun,
-            color: C.ink,
-            fontFamily: UI,
-            fontWeight: 800,
-            fontSize: 32,
-            letterSpacing: 4,
-            transform: `scale(${spring({frame: f - 2, fps, config: BOUNCY})})`,
-          }}
-        >
-          COMING SOON
-        </div>
-      </Band>
-
-      <Band top={350}>
-        <Rise lines={["Pick a number.", "Get pinged."]} colors={[C.paper, C.sun]} at={8} size={96} />
-      </Band>
-
-      <div
-        style={{
-          position: "absolute",
-          left: SAFE.left,
-          top: 610,
-          width: SAFE.w,
-          boxSizing: "border-box",
-          padding: "30px 32px 28px",
-          borderRadius: 40,
-          background: C.white,
-          fontFamily: UI,
-          opacity: Math.min(1, card * 2),
-          transform: `translateY(${(1 - card) * 80}px)`,
-        }}
-      >
-        <div style={{display: "flex", alignItems: "center", gap: 18}}>
-          <div
-            style={{
-              width: 66,
-              height: 66,
-              borderRadius: 33,
-              background: "rgba(42,59,255,.12)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transform: `rotate(${ring}deg)`,
-            }}
-          >
-            <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke={C.cobalt} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7" />
-              <path d="M10 20a2 2 0 0 0 4 0" />
-            </svg>
-          </div>
-          <div style={{fontSize: 36, fontWeight: 800, color: C.ink}}>Alert me when volume hits</div>
-        </div>
-
-        <div style={{display: "flex", gap: 18, marginTop: 26}}>
-          {CHIPS.map((c, i) => {
-            const on = sel === i;
-            return (
-              <div
-                key={c}
-                style={{
-                  flex: 1,
-                  height: 118,
-                  borderRadius: 30,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: DISPLAY,
-                  fontWeight: 800,
-                  fontSize: 64,
-                  letterSpacing: -2,
-                  background: on ? C.cobalt : C.paper,
-                  color: on ? C.white : C.mute,
-                  border: `2px solid ${on ? C.cobalt : C.line}`,
-                  transform: `scale(${on ? 0.9 + 0.1 * chipPop : 1})`,
-                }}
-              >
-                {c}×
               </div>
             );
           })}
         </div>
-        <div style={{marginTop: 18, textAlign: "center", fontSize: 28, fontWeight: 600, color: C.mute}}>
-          or type any number you like
+        <div style={{position: "absolute", left: 4, top: 10, padding: "12px 26px", borderRadius: 16, background: C.coral, color: C.white, fontWeight: 800, fontSize: 34, letterSpacing: 1, opacity: Math.min(1, stamp * 2), transform: `rotate(-9deg) scale(${stamp})`, boxShadow: "0 18px 30px rgba(255,107,74,.4)"}}>
+          VOLUME JUMP
         </div>
       </div>
-
-      <Notif at={44} top={950} title="RELIANCE jumped 8× normal volume" sub="Up 2.4% · tap to view" />
-      <Notif at={88} top={1150} title="TATAMOTORS jumped 30× normal volume" sub="Up 4.1% · tap to view" />
-    </>
+    </div>
   );
 };
 
-/* ------------------------------------------------------------------ */
-/*  SCENE 6 — CTA                                                      */
-/* ------------------------------------------------------------------ */
+/* ============ HERO · Crowd first, price last (152–240) ============ */
+const FLAT = Array.from({length: 29}, (_, i) => `${i === 0 ? "M" : "L"}${(i / 28) * 540} ${110 + Math.sin(i * 1.7) * 6}`).join(" ");
+const Crowd: React.FC = () => {
+  const f = useCurrentFrame();
+  const draw = p(f, 2, 24);
+  const rise = p(f, 58, 84);
+  const people = Math.round(interpolate(f, [30, 70], [340, 12480], {...clampX, easing: OUT}));
+  return (
+    <div style={{...card, height: 720, padding: 40, boxSizing: "border-box", fontFamily: SANS, position: "relative"}}>
+      <div style={{display: "flex", alignItems: "center", gap: 20}}>
+        <div style={{width: 72, height: 72, borderRadius: 22, background: "rgba(47,106,140,.12)", color: C.blue, fontWeight: 800, fontSize: 38, display: "flex", alignItems: "center", justifyContent: "center"}}>R</div>
+        <div style={{fontWeight: 800, fontSize: 42}}>RELIANCE</div>
+        <div style={{marginLeft: "auto", fontFamily: MONO, fontSize: 20, color: C.mute, background: C.bg, borderRadius: 999, padding: "8px 16px"}}>Illustrative</div>
+      </div>
+      <div style={{display: "flex", alignItems: "baseline", gap: 18, marginTop: 26}}>
+        <div style={{fontWeight: 800, fontSize: 76, letterSpacing: -2}}>₹{fmtIN(2948 + rise * 70.4, 2)}</div>
+        <div style={{fontWeight: 800, fontSize: 34, color: C.green, opacity: rise}}>↑ {fmtPct(rise * 2.4)}</div>
+      </div>
+      <svg width={800} height={200} viewBox="0 0 800 200">
+        <path d={FLAT} pathLength={1} strokeDasharray={1} strokeDashoffset={1 - draw} fill="none" stroke={C.blue} strokeWidth={6} strokeLinecap="round" />
+        <path d="M540 110 C 600 110, 640 60, 800 24" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - rise} fill="none" stroke={C.green} strokeWidth={6} strokeLinecap="round" />
+      </svg>
+      <div style={{position: "absolute", left: 40, right: 40, bottom: 120, opacity: p(f, 28, 40)}}>
+        <Label t="PEOPLE TRADING NOW" />
+        <div style={{fontWeight: 800, fontSize: 84, letterSpacing: -2, color: C.blue}}>{fmtIN(people)}</div>
+      </div>
+      <div style={{position: "absolute", left: 40, right: 40, bottom: 34, display: "flex", gap: 14, fontWeight: 700, fontSize: 28}}>
+        <span style={{padding: "10px 20px", borderRadius: 999, background: "rgba(255,107,74,.15)", color: C.coral, opacity: p(f, 34, 44)}}>1 · Crowd arrives</span>
+        <span style={{padding: "10px 20px", borderRadius: 999, background: "rgba(18,183,106,.15)", color: C.green, opacity: p(f, 60, 70)}}>2 · Price follows</span>
+      </div>
+      {Array.from({length: 56}, (_, i) => {
+        const a = hash(i + 3) * Math.PI * 2;
+        const d0 = 4 + hash(i + 40) * 20;
+        const t = p(f, d0, d0 + 26, Easing.out(Easing.cubic));
+        const sx = 440 + Math.cos(a) * 1000;
+        const sy = 360 + Math.sin(a) * 800;
+        const ex = 80 + hash(i + 21) * 720;
+        const ey = 300 + hash(i + 9) * 260;
+        const s = 20 + hash(i + 70) * 12;
+        return <div key={i} style={{position: "absolute", left: sx + (ex - sx) * t - s / 2, top: sy + (ey - sy) * t - s / 2, width: s, height: s, borderRadius: s, background: [C.coral, C.blue, C.rust][i % 3], opacity: Math.min(1, t * 5) * (1 - p(f, 28, 40))}} />;
+      })}
+    </div>
+  );
+};
+
+/* ============ HERO · Direction (240–330) ============ */
+const UP: Row = {t: "RELIANCE", r: 6.2, up: true, sub: "10:42 AM", price: 2948, pct: 2.4};
+const DN: Row = {t: "TATASTEEL", r: 7.8, up: false, sub: "11:15 AM", price: 138.2, pct: -1.9};
+const Direction: React.FC = () => {
+  const f = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const a = spring({frame: f - 4, fps, config: BOUNCY});
+  const b = spring({frame: f - 40, fps, config: BOUNCY});
+  const Tag = ({t, col, s, top}: {t: string; col: string; s: number; top: number}) => (
+    <div style={{position: "absolute", left: 8, top, padding: "10px 26px", borderRadius: 999, background: col, color: C.white, fontFamily: MONO, fontWeight: 700, fontSize: 26, letterSpacing: 2, opacity: Math.min(1, s), transform: `translateX(${(1 - Math.min(1, s)) * -60}px)`}}>{t}</div>
+  );
+  return (
+    <div style={{position: "relative", height: 700}}>
+      <Tag t="↑ BUYERS RUSHING IN" col={C.green} s={a} top={0} />
+      <div style={{...card, position: "absolute", left: 0, right: 0, top: 80, height: 170, overflow: "hidden", opacity: Math.min(1, a * 2), transform: `translateY(${(1 - a) * 100}px)`}}>
+        <RowView d={UP} top={15} />
+      </div>
+      <Tag t="↓ SELLERS RUSHING OUT" col={C.red} s={b} top={330} />
+      <div style={{...card, position: "absolute", left: 0, right: 0, top: 410, height: 170, overflow: "hidden", opacity: Math.min(1, b * 2), transform: `translateY(${(1 - b) * 100}px)`}}>
+        <RowView d={DN} top={15} />
+      </div>
+      <div style={{position: "absolute", left: 0, right: 0, top: 620, textAlign: "center", fontFamily: SANS, fontWeight: 600, fontSize: 38, color: C.mute, opacity: p(f, 62, 78)}}>Bigger × = bigger rush</div>
+    </div>
+  );
+};
+
+/* ============ HERO · Live feed (330–420) ============ */
+const FEED: Row[] = [
+  {t: "RELIANCE", r: 6.2, up: true, sub: "2:11 PM · just now", price: 2948, pct: 2.4},
+  {t: "ICICIBANK", r: 5.4, up: true, sub: "2:05 PM · 3 min ago", price: 1312.4, pct: 1.8},
+  {t: "SBIN", r: 6.9, up: false, sub: "1:58 PM · 10 min ago", price: 812.15, pct: -1.4},
+];
+const AppFeed: React.FC = () => {
+  const f = useCurrentFrame();
+  const tap = f >= 62;
+  return (
+    <div style={{position: "relative", fontFamily: SANS}}>
+      <div style={{...card, height: 560, position: "relative"}}>
+        <div style={{position: "absolute", left: 34, top: 28}}><SpikeTile size={76} /></div>
+        <div style={{position: "absolute", left: 130, top: 26, fontWeight: 800, fontSize: 40}}>Volume Jumps</div>
+        <div style={{position: "absolute", left: 130, top: 78, display: "flex", alignItems: "center", gap: 10, fontFamily: MONO, fontSize: 22, color: C.mute}}>
+          <div style={{width: 12, height: 12, borderRadius: 6, background: C.green, boxShadow: `0 0 ${10 + 6 * Math.sin(f / 5)}px ${C.green}`}} /> LIVE
+        </div>
+        <div style={{position: "absolute", right: 30, top: 38, fontWeight: 800, fontSize: 30, color: C.blue, padding: "10px 20px", borderRadius: 16, background: tap ? "rgba(47,106,140,.14)" : "transparent"}}>View all</div>
+        <div style={{position: "absolute", left: 0, right: 0, top: 128, height: 1.5, background: C.line}} />
+        <div style={{position: "absolute", left: 0, right: 0, top: 140, height: 420, overflow: "hidden", borderRadius: "0 0 40px 40px"}}>
+          {FEED.map((d, i) => {
+            const s = p(f, 4 + i * 8, 22 + i * 8);
+            return <RowView key={d.t} d={d} top={i * 140 + (1 - s) * 40} opacity={s} tint={i === 0 ? 1 - p(f, 36, 64) : 0} />;
+          })}
+        </div>
+        <Cursor x={interpolate(f, [28, 58], [600, 760], {...clampX, easing: INOUT})} y={interpolate(f, [28, 58], [520, 62], {...clampX, easing: INOUT})} opacity={p(f, 24, 32) * (1 - p(f, 74, 82))} tapAt={62} />
+      </div>
+      <div style={{marginTop: 36, textAlign: "center", fontFamily: MONO, fontWeight: 700, fontSize: 26, letterSpacing: 2, color: C.mute, opacity: p(f, 40, 56)}}>↻ UPDATES EVERY MINUTE</div>
+    </div>
+  );
+};
+
+/* ============ HERO · Alerts (420–520) ============ */
+const Alerts: React.FC = () => {
+  const f = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const sel = f < 24 ? 0 : 2;
+  const pop = spring({frame: f - 24, fps, config: BOUNCY});
+  const n = spring({frame: f - 46, fps, config: {damping: 14, stiffness: 140, mass: 0.8}});
+  const k = Math.max(0, f - 46);
+  const ring = f >= 46 ? Math.sin(k * 1.6) * 20 * Math.exp(-k / 9) : 0;
+  const push = (top: number, title: string, sub: string, s: number) => (
+    <div style={{...card, position: "absolute", left: 0, right: 0, top, padding: "26px 30px", display: "flex", alignItems: "center", gap: 24, opacity: Math.min(1, s * 3), transform: `translateY(${(1 - s) * -160}px)`, boxShadow: "0 30px 60px rgba(20,18,26,.16)"}}>
+      <Img src={LOGO} style={{width: 90, height: 90, borderRadius: 24, objectFit: "contain"}} />
+      <div style={{flex: 1}}>
+        <div style={{display: "flex", justifyContent: "space-between", fontFamily: MONO, fontSize: 22, color: C.mute, fontWeight: 700}}><span>OPTIONXI</span><span>now</span></div>
+        <div style={{fontWeight: 800, fontSize: 34, marginTop: 4, whiteSpace: "nowrap"}}>{title}</div>
+        <div style={{fontWeight: 600, fontSize: 28, color: C.mute}}>{sub}</div>
+      </div>
+    </div>
+  );
+  return (
+    <div style={{fontFamily: SANS, position: "relative", height: 760}}>
+      <div style={{...card, padding: 40}}>
+        <div style={{display: "flex", alignItems: "center", gap: 20}}>
+          <div style={{width: 76, height: 76, borderRadius: 24, background: "rgba(47,106,140,.12)", display: "flex", alignItems: "center", justifyContent: "center", transform: `rotate(${ring}deg)`}}>
+            <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke={C.blue} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7" /><path d="M10 20a2 2 0 0 0 4 0" /></svg>
+          </div>
+          <div style={{fontWeight: 800, fontSize: 38}}>Alert me when volume hits</div>
+        </div>
+        <div style={{display: "flex", gap: 18, marginTop: 30}}>
+          {[8, 15, 30].map((c, i) => {
+            const on = sel === i;
+            return (
+              <div key={c} style={{flex: 1, height: 120, borderRadius: 30, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 62, letterSpacing: -2, background: on ? C.blue : C.bg, color: on ? C.white : C.mute, transform: `scale(${on ? 0.9 + 0.1 * (i === 2 ? pop : 1) : 1})`}}>{c}×</div>
+            );
+          })}
+        </div>
+        <div style={{marginTop: 20, textAlign: "center", fontWeight: 600, fontSize: 28, color: C.mute}}>or type any number you like</div>
+      </div>
+      {push(400, "TATAMOTORS jumped 30× volume", "↑ Up 4.1% · tap to view", n)}
+    </div>
+  );
+};
+
+/* ============ HERO · Replay (520–600) ============ */
+const DAY1: Row[] = [
+  {t: "WELCORP", r: 7.4, up: true, sub: "Spotted at 9:48 AM", price: 812.4, pct: 2.4},
+  {t: "RELIANCE", r: 6.2, up: true, sub: "Spotted at 10:42 AM", price: 2948, pct: 1.4},
+];
+const DAY2: Row[] = [
+  {t: "INFY", r: 5.8, up: true, sub: "Spotted at 10:05 AM", price: 1884, pct: 2.1},
+  {t: "HDFCBANK", r: 6.6, up: false, sub: "Spotted at 12:30 PM", price: 1621.5, pct: -1.2},
+];
+const Replay: React.FC = () => {
+  const f = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const sw = p(f, 28, 38);
+  const pop = spring({frame: f - 28, fps, config: BOUNCY});
+  return (
+    <div style={{fontFamily: SANS, position: "relative", height: 660}}>
+      <div style={{...card, height: 120, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 44px", fontWeight: 800, fontSize: 40}}>
+        <span style={{color: C.blue, fontSize: 56}}>‹</span>
+        <span>{sw < 0.5 ? "Thu, 12 Nov 2026" : "Wed, 11 Nov 2026"}</span>
+        <span style={{color: C.mute, fontSize: 56}}>›</span>
+      </div>
+      <div style={{display: "flex", alignItems: "baseline", gap: 14, marginTop: 36, marginLeft: 12}}>
+        <span style={{fontWeight: 800, fontSize: 96, letterSpacing: -3, color: C.blue, display: "inline-block", transform: `scale(${0.8 + 0.2 * pop})`, transformOrigin: "0 100%"}}>{sw < 0.5 ? 12 : 9}</span>
+        <span style={{fontWeight: 700, fontSize: 40}}>stocks had a rush</span>
+      </div>
+      <div style={{...card, position: "absolute", left: 0, right: 0, top: 290, height: 300, overflow: "hidden"}}>
+        {DAY1.map((d, i) => <RowView key={d.t} d={d} top={10 + i * 140} opacity={1 - sw} />)}
+        {DAY2.map((d, i) => <RowView key={d.t} d={d} top={10 + i * 140} opacity={sw} />)}
+      </div>
+      <Cursor x={interpolate(f, [6, 24], [420, 62], {...clampX, easing: INOUT})} y={60} opacity={p(f, 4, 10) * (1 - p(f, 44, 52))} tapAt={26} />
+    </div>
+  );
+};
+
+/* ============ HERO · Sensitivity (600–670) ============ */
+const RELAXED: Row[] = [DAY1[0], DAY1[1], {t: "SBIN", r: 6.9, up: false, sub: "Spotted at 11:20 AM", price: 812.15, pct: -1.4}];
+const STRICT: Row[] = [DAY1[0], {t: "SBIN", r: 8.3, up: false, sub: "Spotted at 11:20 AM", price: 812.15, pct: -1.4}];
+const Sens: React.FC = () => {
+  const f = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const m = p(f, 14, 34, INOUT);
+  const pop = spring({frame: f - 32, fps, config: BOUNCY});
+  const sw = W - 80;
+  return (
+    <div style={{fontFamily: SANS, position: "relative", height: 700}}>
+      <div style={{display: "flex", alignItems: "baseline", gap: 14, marginLeft: 12}}>
+        <span style={{fontWeight: 800, fontSize: 110, letterSpacing: -3, color: C.blue, display: "inline-block", transform: `scale(${0.8 + 0.2 * (m > 0.5 ? pop : 1)})`, transformOrigin: "0 100%"}}>{m < 0.5 ? 12 : 5}</span>
+        <span style={{fontWeight: 700, fontSize: 40}}>stocks had a rush</span>
+      </div>
+      <div style={{...card, position: "absolute", left: 0, right: 0, top: 150, height: 300, overflow: "hidden"}}>
+        {RELAXED.map((d, i) => <RowView key={"r" + i} d={d} top={8 + i * 94} h={94} opacity={1 - m} />)}
+        {STRICT.map((d, i) => <RowView key={"s" + i} d={d} top={8 + i * 140} opacity={m} />)}
+      </div>
+      <div style={{...card, position: "absolute", left: 0, right: 0, top: 490, padding: 40, boxSizing: "border-box"}}>
+        <Label t="SENSITIVITY" />
+        <div style={{position: "relative", height: 100, marginTop: 14, borderRadius: 999, background: C.bg, border: `1.5px solid ${C.line}`}}>
+          <div style={{position: "absolute", top: 6, left: 6 + m * (sw - 12) * (2 / 3), width: (sw - 12) / 3, height: 88, borderRadius: 999, background: C.blue}} />
+          {["Relaxed", "Standard", "Strict"].map((s, i) => (
+            <div key={s} style={{position: "absolute", left: (i * sw) / 3, width: sw / 3, height: 100, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 32, color: Math.round(m * 2) === i ? C.white : C.mute}}>{s}</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ============ HERO · CTA (670–810): app card → badge → link in bio ============ */
 const Cta: React.FC = () => {
   const f = useCurrentFrame();
   const {fps} = useVideoConfig();
   const icon = spring({frame: f - 4, fps, config: BOUNCY});
-  const sub = p(f, 38, 54);
-  const badge = spring({frame: f - 62, fps, config: BOUNCY});
-  const tapD = f - 96;
-  const dip = tapD >= 0 && tapD < 10 ? Math.sin((tapD / 10) * Math.PI) * 0.05 : 0;
-  const url = p(f, 72, 86);
-  const pills = ["Live feed", "Replay any day", "Alerts soon"];
-
+  const ring = (f % 45) / 45;
+  const pills = ["Live feed", "Instant alerts", "Replay any day"];
+  const badge = spring({frame: f - 40, fps, config: BOUNCY});
+  const bio = spring({frame: f - 70, fps, config: BOUNCY});
+  const url = p(f, 90, 104);
   return (
-    <>
-      <Band top={SAFE.y0 + 10}>
-        <div style={{transform: `scale(${icon})`}}>
-          <SpikeIcon size={190} loop={90} />
+    <div style={{fontFamily: SANS, position: "relative", height: 780, textAlign: "center"}}>
+      <div style={{position: "relative", width: 220, height: 220, margin: "0 auto", transform: `scale(${icon})`}}>
+        <div style={{position: "absolute", inset: -ring * 90, borderRadius: 64 + ring * 40, border: `4px solid ${C.coral}`, opacity: 1 - ring}} />
+        <div style={{...card, width: 220, height: 220, borderRadius: 64, display: "flex", alignItems: "center", justifyContent: "center"}}>
+          <SpikeTile size={140} />
         </div>
-      </Band>
-
-      <Band top={560}>
-        <Rise lines={["Volume Jumps."]} at={12} size={128} color={C.ink} />
-      </Band>
-
-      <Band top={740}>
-        <div
-          style={{
-            fontFamily: UI,
-            fontWeight: 600,
-            fontSize: 46,
-            color: C.mute,
-            opacity: sub,
-            transform: `translateY(${(1 - sub) * 20}px)`,
-          }}
-        >
-          See the crowd first.
-        </div>
-      </Band>
-
-      <Band top={850}>
-        <div style={{display: "flex", gap: 14}}>
-          {pills.map((t, i) => {
-            const s = spring({frame: f - 44 - i * 6, fps, config: SOFT});
-            return (
-              <div
-                key={t}
-                style={{
-                  padding: "16px 26px",
-                  borderRadius: 999,
-                  background: i === 2 ? C.sun : C.white,
-                  border: `2px solid ${i === 2 ? C.sun : C.line}`,
-                  fontFamily: UI,
-                  fontWeight: 700,
-                  fontSize: 30,
-                  color: C.ink,
-                  opacity: s,
-                  transform: `translateY(${(1 - s) * 40}px)`,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {t}
-              </div>
-            );
-          })}
-        </div>
-      </Band>
-
-      <Band top={1020}>
-        <div style={{position: "relative", transform: `scale(${(0.6 + 0.4 * badge) * (1 - dip)})`, opacity: p(f, 62, 68)}}>
-          <Img src={BADGE} style={{width: 640, height: "auto", display: "block"}} />
-          {tapD >= 0 && tapD < 22 && (
-            <div
-              style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                width: 60 + tapD * 10,
-                height: 60 + tapD * 10,
-                marginLeft: -(60 + tapD * 10) / 2,
-                marginTop: -(60 + tapD * 10) / 2,
-                borderRadius: "50%",
-                border: `4px solid ${C.cobalt}`,
-                opacity: (1 - tapD / 22) * 0.7,
-              }}
-            />
-          )}
-        </div>
-      </Band>
-
-      <Band top={1330}>
-        <div
-          style={{
-            fontFamily: UI,
-            fontWeight: 800,
-            fontSize: 44,
-            color: C.cobalt,
-            opacity: url,
-            transform: `translateY(${(1 - url) * 16}px)`,
-          }}
-        >
-          optionxi.com
-        </div>
-      </Band>
-
-      <Band top={1396}>
-        <div style={{fontFamily: UI, fontWeight: 500, fontSize: 24, color: C.mute, opacity: url, textAlign: "center"}}>
-          Sample data shown · Educational use only · Not investment advice
-        </div>
-      </Band>
-    </>
+      </div>
+      <div style={{marginTop: 36, fontWeight: 800, fontSize: 56, letterSpacing: -1, opacity: p(f, 10, 22)}}>Volume Jumps</div>
+      <div style={{display: "flex", gap: 14, justifyContent: "center", marginTop: 30}}>
+        {pills.map((t, i) => {
+          const s = spring({frame: f - 20 - i * 6, fps, config: SOFT});
+          return (
+            <div key={t} style={{padding: "16px 26px", borderRadius: 999, background: i === 1 ? C.coral : C.white, color: i === 1 ? C.white : C.ink, fontWeight: 700, fontSize: 30, boxShadow: "0 10px 24px rgba(20,18,26,.08)", opacity: s, transform: `translateY(${(1 - s) * 40}px)`, whiteSpace: "nowrap"}}>{t}</div>
+          );
+        })}
+      </div>
+      <div style={{marginTop: 56, transform: `scale(${0.6 + 0.4 * badge})`, opacity: p(f, 40, 48)}}>
+        <Img src={BADGE} style={{width: 620, height: "auto"}} />
+      </div>
+      <div style={{marginTop: 40, display: "inline-block", padding: "16px 34px", borderRadius: 999, background: "rgba(47,106,140,.12)", color: C.blue, fontWeight: 800, fontSize: 38, transform: `scale(${bio})`, opacity: Math.min(1, bio * 2)}}>
+        Link in bio ↑
+      </div>
+      <div style={{marginTop: 30, fontFamily: MONO, fontWeight: 700, fontSize: 42, color: C.blue, opacity: url}}>optionxi.com</div>
+      <div style={{marginTop: 18, fontSize: 24, color: C.mute, opacity: url}}>Educational use only · Not investment advice</div>
+    </div>
   );
 };
 
-/* ------------------------------------------------------------------ */
-/*  Root                                                               */
-/* ------------------------------------------------------------------ */
+/* ---------------------------- root ---------------------------- */
 export const Reel: React.FC = () => {
   useFonts();
-
-  const scenes: {name: string; from: number; dur: number; bg: string; origin?: [number, number]; el: React.ReactNode}[] = [
-    {name: "Hook", from: 0, dur: 110, bg: C.cobalt, el: <Hook />},
-    {name: "Idea", from: 110, dur: 190, bg: C.paper, origin: [CX, CY], el: <Idea />},
-    {name: "Direction", from: 300, dur: 110, bg: C.sun, origin: [CX, 1000], el: <Direction />},
-    {name: "InApp", from: 410, dur: 250, bg: C.ink, origin: [CX, 1030], el: <InApp />},
-    {name: "Alerts", from: 660, dur: 130, bg: C.cobalt, origin: [CX, 760], el: <Alerts />},
-    {name: "CTA", from: 790, dur: 110, bg: C.paper, origin: [CX, 1180], el: <Cta />},
-  ];
-
   return (
-    <AbsoluteFill style={{background: C.cobalt, fontFamily: UI}}>
-      {scenes.map((s, i) => (
-        <Sequence
-          key={s.name}
-          name={s.name}
-          from={s.from}
-          durationInFrames={s.dur + (i < scenes.length - 1 ? R : 0)}
-        >
-          <Scene bg={s.bg} origin={s.origin}>
-            {s.el}
-          </Scene>
-        </Sequence>
-      ))}
-      <SafeGuide />
+    <AbsoluteFill style={{fontFamily: SANS}}>
+      <Canvas />
+      <Hero from={76} dur={76}><Bars /></Hero>
+      <Hero from={152} dur={88} top={470}><Crowd /></Hero>
+      <Hero from={240} dur={90} top={490}><Direction /></Hero>
+      <Hero from={330} dur={90} top={480}><AppFeed /></Hero>
+      <Hero from={420} dur={100} top={470}><Alerts /></Hero>
+      <Hero from={520} dur={80} top={480}><Replay /></Hero>
+      <Hero from={600} dur={70} top={470}><Sens /></Hero>
+      <Hero from={670} dur={140} top={470} keep><Cta /></Hero>
+      <Hook />
+      <Captions />
     </AbsoluteFill>
   );
 };

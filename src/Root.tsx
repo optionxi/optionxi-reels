@@ -11,15 +11,19 @@ import ReelStockResearch, { config as configStockResearch } from "./Reels - App 
 import ReelScreeners, { config as configScreeners } from "./Reels - App Features/Reel-Screeners";
 import YoutubeIntro, { config as configYoutubeIntro } from "./Youtube/Youtube-Intro";
 import ReelVolumeJumps, { config as configVolumeJumps } from "./Reels - App Features/Reel-Stock Volume Jump";
+import ReelScreenerPro , { config as configReelScreenerPro } from "./Reels - App Features/Reel-Stock Screeners Pro";
+import ReelOpenSource , { config as configOpenSource } from "./Reels- Build Publically/Reel-How I build using AI and Opensourced it";
 
 export const RemotionRoot: React.FC = () => (
   <>
     {/* Active reel — shown first in Studio */}
     
-    <Composition id="VolumeJumps" component={ReelVolumeJumps} {...configVolumeJumps} />
+    <Composition id="VolumeJumps"  component={ReelVolumeJumps} {...configVolumeJumps} />
+    <Composition id="ScreenersPro" component={ReelScreenerPro} {...configReelScreenerPro} />
+    <Composition id="OpenSource" component={ReelOpenSource} {...configOpenSource} />.
 
     {/* Other reels — keep for reference / quick switching */}
-    <Composition id="OptionXiReel"          component={ReelAppIntroV3}         {...configAppIntroV3} />
+    {/* <Composition id="OptionXiReel"          component={ReelAppIntroV3}         {...configAppIntroV3} />
     <Composition id="AppIntroV2"            component={ReelAppIntroV2}         {...configAppIntroV2} />
     <Composition id="AppIntroV1"            component={ReelAppIntroV1}         {...configAppIntroV1} />
     <Composition id="AvatarHowItWorksV2"    component={ReelAvatarHowItWorksV2} {...configAvatarV2} />
@@ -27,6 +31,6 @@ export const RemotionRoot: React.FC = () => (
     <Composition id="MarketSentiment"       component={ReelMarketSentiment}    {...configMarketSentiment} />
     <Composition id="StockResearch"         component={ReelStockResearch}      {...configStockResearch} />
     <Composition id="Screeners"             component={ReelScreeners}          {...configScreeners} />
-    <Composition id="YoutubeIntro"          component={YoutubeIntro}           {...configYoutubeIntro} />
+    <Composition id="YoutubeIntro"          component={YoutubeIntro}           {...configYoutubeIntro} /> */}
   </>
 );
