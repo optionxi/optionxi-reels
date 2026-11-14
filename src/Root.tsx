@@ -12,15 +12,17 @@ import ReelScreeners, { config as configScreeners } from "./Reels - App Features
 import YoutubeIntro, { config as configYoutubeIntro } from "./Youtube/Youtube-Intro";
 import ReelVolumeJumps, { config as configVolumeJumps } from "./Reels - App Features/Reel-Stock Volume Jump";
 import ReelScreenerPro , { config as configReelScreenerPro } from "./Reels - App Features/Reel-Stock Screeners Pro";
-import ReelOpenSource , { config as configOpenSource } from "./Reels- Build Publically/Reel-How I build using AI and Opensourced it";
+import ReelOpenSource , { config as configOpenSource } from "./Reels- Build Publically/Reel- How I build using AI and Opensourced it";
+import ReelFree, { config as configFree } from "./Reels- Build Publically/Reel- Create your own AI videos";
 
 export const RemotionRoot: React.FC = () => (
   <>
     {/* Active reel — shown first in Studio */}
     
-    {/* <Composition id="VolumeJumps"  component={ReelVolumeJumps} {...configVolumeJumps} />
-    <Composition id="ScreenersPro" component={ReelScreenerPro} {...configReelScreenerPro} /> */}
+    {/* <Composition id="VolumeJumps"  component={ReelVolumeJumps} {...configVolumeJumps} /> */}
+    {/* <Composition id="ScreenersPro" component={ReelScreenerPro} {...configReelScreenerPro} /> */}
     <Composition id="OpenSource" component={ReelOpenSource} {...configOpenSource} />.
+    <Composition id="FreeReel" component={ReelFree} {...configFree} />
 
     {/* Other reels — keep for reference / quick switching */}
     {/* <Composition id="OptionXiReel"          component={ReelAppIntroV3}         {...configAppIntroV3} />
