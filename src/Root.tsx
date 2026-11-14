@@ -21,11 +21,11 @@ export const RemotionRoot: React.FC = () => (
     
     {/* <Composition id="VolumeJumps"  component={ReelVolumeJumps} {...configVolumeJumps} /> */}
     {/* <Composition id="ScreenersPro" component={ReelScreenerPro} {...configReelScreenerPro} /> */}
-    <Composition id="OpenSource" component={ReelOpenSource} {...configOpenSource} />.
-    <Composition id="FreeReel" component={ReelFree} {...configFree} />
+    {/* <Composition id="OpenSource" component={ReelOpenSource} {...configOpenSource} />. */}
+    {/* <Composition id="FreeReel" component={ReelFree} {...configFree} /> */}
 
     {/* Other reels — keep for reference / quick switching */}
-    {/* <Composition id="OptionXiReel"          component={ReelAppIntroV3}         {...configAppIntroV3} />
+    <Composition id="OptionXiReel"          component={ReelAppIntroV3}         {...configAppIntroV3} />
     <Composition id="AppIntroV2"            component={ReelAppIntroV2}         {...configAppIntroV2} />
     <Composition id="AppIntroV1"            component={ReelAppIntroV1}         {...configAppIntroV1} />
     <Composition id="AvatarHowItWorksV2"    component={ReelAvatarHowItWorksV2} {...configAvatarV2} />
@@ -33,6 +33,6 @@ export const RemotionRoot: React.FC = () => (
     <Composition id="MarketSentiment"       component={ReelMarketSentiment}    {...configMarketSentiment} />
     <Composition id="StockResearch"         component={ReelStockResearch}      {...configStockResearch} />
     <Composition id="Screeners"             component={ReelScreeners}          {...configScreeners} />
-    <Composition id="YoutubeIntro"          component={YoutubeIntro}           {...configYoutubeIntro} /> */}
+    <Composition id="YoutubeIntro"          component={YoutubeIntro}           {...configYoutubeIntro} />
   </>
 );
